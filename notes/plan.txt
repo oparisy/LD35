@@ -1,0 +1,10 @@
+Plan :
+ * écrire mode basique de déplacement (globe chargé + caméra proche + placeholder chargé + prise en compte pad)
+ * ajuster placement caméra, vitesse de déplacement, etc. pour interaction agréable
+ * ajouter placeholders pour principaux éléments de gameplay (ressources, torches)
+ * ajouter ennemis (placeholders + IA basique)
+ * écrire moteur de particules basique pour joueur
+ * ajouter jauges
+ * modéliser ressources, éléments de décors et ennemis
+ * Son, écran de chargement
+ * Polish gameplay

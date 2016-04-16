@@ -1,0 +1,44 @@
+{
+  "name": "ld35",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+	"lint": "jshint index.js",
+    "prestart": "browserify index.js -o bundle.js",
+    "start": "budo index.js --open -- -t glslify -t brfs"
+  },
+  "devDependencies": {
+    "jshint": "latest",
+    "beefy": "^2.1.1",
+    "browserify": "^6.2.0",
+	"glslify": "^2.2.1",
+	"brfs": "^1.4.1",
+	"budo": "^6.0.0"
+  },
+  "dependencies": {
+	"q": "1.4.1",
+	"obj-mtl-loader": "0.0.5",
+	"xhr-request": "1.0.1",
+	"arraybuffer-to-buffer": "0.0.1",
+	"gl-context": "0.1.1",
+    "canvas-fit": "1.2.0",
+	"gl-geometry": "3.1.0",
+	"gl-shader": "4.1.0",
+	"gl-clear": "2.0.0",
+	"gl-mat4": "1.1.4",
+	"gl-mat3": "latest",
+	"gl-vec3": "1.0.3",
+	"gl-quat": "1.0.0",
+	"chai": "3.4.1",
+	"normals": "1.0.1",
+	"gp-controls": "0.0.0",
+	"orbit-camera": "1.0.0",
+	"key-pressed": "0.0.1",
+	"turntable-camera": "latest"
+  },
+  "browserify": {
+    "transform": [
+      "glslify", "brfs"
+    ]
+  }
+}

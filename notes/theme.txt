@@ -1,0 +1,94 @@
+Thème "shapeshift"
+Noter que ce n'est pas "shapeshifter" donc on ne doit pas forcément incarner le thème dans un personnage ou ennemi
+
+Thème utilisé pour :
+* représenter des pouvoirs variés, qualitativement différents : megaman, kid chameleon, bioshock
+* représenter l'évolution en puissance du joueur : altered beast, prototype
+* représenter deux facettes / états / natures : transformers, loup garou
+
+Wikipedia : pas d'article sur "shapeshift", seulement "shapeshifting" :
+"The most common form of shapeshifting myths is that of therianthropy,
+which is the transformation of a human being into an animal or conversely,
+of an animal into human form. Legends allow for transformations into plants and objects,
+and the assumption of another human countenance (e.g. fair to ugly)."
+
+https://en.wiktionary.org/wiki/shapeshift :
+1. to change one's shape or form into another through often magical means, normally applied only to living beings.
+2. (figuratively) to undergo a noticeable change (in character for example), to metamorphosize
+
+Shape = une forme => un jeu avec des formes qui changent ? Puzzle game peut-être ?
+Il existe un mécanisme de gameplay "une ressource/couleur à la fois, on peut en changer librement ou via une
+interaction avec le décors, et cela doit être utilisé pour traverser des éléments de décors, détruire certains
+types d'ennemis, etc."
+
+"Shape" pourrait être animal / végétal / minéral ? Ou les 4 éléments ?
+Se prêterait bien à un thème "naturel" et des représentations abstraites (systèmes de particule, lowpoly)
+
+Caractéristiques :
+ * animal : se déplace, peut être remarqué, peut prendre des dégâts, peut faire des dégâts
+ * végétal : immobile, croît, peut prendre des dégâts, discret
+ * minéral : immobile, "observe" (ralentissement du temps ?), résiste aux extrêmes (chaleur, etc.)
+
+Souci : je ne sais pas animer un animal sans travail sur le code significatif
+
+4 éléments :
+ * terre : robuste, immobile, enracinée
+ * eau : fluide, subit la pente, peut geler
+ * feu : fluide, se propage, besoin d'énergie
+ * air : fluide, pas "touchable", peu d'influence sur les choses (sauf vent)
+ 
+ Défaut : 4 thèmes distincts, difficiles à individualiser
+ Je peux prendre ceux qui m'intéressent : feu, eau ?
+ * points communs : mouvement, propagation
+ * éléments différenciateurs :
+  * feu : besoin d'énergie, va où il veut mais besoin de combustible, ne peut que détruire
+  * eau : suit la pente, peut déplacer des objets
+
+Environnement : "micro niveaux" low poly façon "the sentinel" ? Exploiter les reliefs pour l'eau
+Je ne suis pas sûr de savoir faire un puzzle game / du level design...
+Génération procédurale + trouver des seeds sympa en playtestant ?
+Height field arbitraire (triangles) ? Ou plus contraint ("à hexagones" / "tour par tour") ?
+Me fait aussi penser à : https://en.wikipedia.org/wiki/Spindizzy_(video_game)
+
+Gameplay classique ? Par exemple :
+ * "détruire tous les ennemis"
+ * "infiltration" / arriver au bout du niveau
+ * "à la sokoban" : pousser des blocs
+
+On peut imaginer que l'eau pousse du combustible, et que le feu l'exploite ?
+Contraignant pour le joueur et pas très logique (bois mouillé...)
+
+GUI : 
+Une jauge à remplir pour passer d'un état à l'autre, idéalement façon strike suit zero (mais crée une asymétrie)
+
+Contrôles :
+ * un bouton pour changer d'état
+ * un mode "tour par tour" avec croix ou stick pour choisir une direction + bouton pour valider ?
+   => pas très amusant pour les enfants mais plus tactique
+   => j'ai plus envie d'un mode "actif" / "arcade", avec des déplacements interactifs, de l'aggro...
+   => déplacements "libres" mais avec des contraintes pour l'eau (ne peut que descendre)
+
+Ennemis : il ne faut pas que j'ai trop à modéliser / animer !
+
+Wikipedia (https://en.wikipedia.org/wiki/Gameplay) : parle de "game mechanics" plutôt que de gameplay
+
+Rendu :
+combustion objets / ennemis = deviennent émetteurs de particules
+
+Gameplay :
+ * environnement "arène" fermé : murs ou tore ou globe
+ * des ennemis avec aggro
+ * Peuvent être enflammés
+ * il faut avoir rempli une jauge d'énergie pour être en mode feu ; c'est aussi la "vie"
+ * l'état "eau" permet de collecter du combustible ; l'état "feu" l'enflamme sans remplir la jauge
+ * en mode "feu", la jauge descend lentement
+ * en mode "eau", la jauge est fixée (mais peut encore descendre si contact avec ennemis)
+ * les ennemis sont détruits si enflammés (il faut être en mode feu et les toucher, ou avoir enflammé du combustible à proximité)
+ * certains objets explosifs ? (baril)
+ * certains combustibles peuvent être des éléments de décor inamovibles (arbres)
+ * condition de fin de niveau : enflammer des objectifs (torches / monuments) façon counter strike
+ * les ennemis sont plus proches (attirés ?) des objectifs, leur aggro augmente si on s'en approche ?
+ * ennemis enflammables => papier ? bois ?
+ * utiliser les boutons "rouge" et "bleu" du pad pour changer d'état
+ * on ne peut pas mourir d'être resté en mode feu : sous une certaine énergie, on repasse en mode "eau"
+ * le combustible est une ressource à collecter en passant à proximité

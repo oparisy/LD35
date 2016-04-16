@@ -1,0 +1,20 @@
+Travail dans Blender en Top Persp pour se rapprocher du référentiel OpenGL et avoir une idée des proportions
+Modélisation de tous les assets dans le même référentiel pour avoir des tailles comparables
+Globe : taille de 100
+Placeholder personnage: taille de 1
+Test en mode FPS dans Blender (Shift + F, clic gquche pour placer caméra) : courbure trop importante !
+Globe de taille 500 : mieux mais courbure reste importante, et va être long à explorer pour le joueur
+=> sauvé dans tests/scene1.blend
+
+Second test : grille de taille 500, 50*50 divisions
+Player de taille 2 (cone)
+=> bonne base de départ, plutôt grand
+
+On va plutôt utiliser un cercle ("flat earth")
+Rayon de 300 semble OK en terme de taille et perspective
+Loop cuts pour subdiviser ne marchent pas sur cercle => I + shift+R
+(cf. http://blender.stackexchange.com/questions/27968/how-to-add-edge-loops-to-a-circle-triangle-fan)
+Coloration avec matériaux basiques pour avoir des points de repère
+
+Noter ce tuto pour terrain random (une autre fois !) :
+https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/How_to_Do_Procedural_Landscape_Modeling

@@ -1,0 +1,8 @@
+Samedi (16/04/2016)
+11h30 Début (ne pas chercher à se garer à MT le samedi, amener un adaptateur HDMI <=> DVI...)
+13h30 Principaux éléments de gameplay trouvés
+15h00 Fin de pause
+16h15 Placeholders et échelle basiques en place
+17h15 Pause (15mn)
+17h45 Premier "écran noir"
+18h10 Premier affichage d'assets conforme à Blender
