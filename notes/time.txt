@@ -8,4 +8,7 @@ Samedi (16/04/2016)
 18h10 Premier affichage d'assets conforme à Blender
 18h50 Premier commit github + setup gh-pages
 19h45 Prise en compte pad et clavier
-20h50 Tracking basique par caméra(lookat + se translate pour conserver distance raisonnable)
+20h50 Tracking basique par caméra (lookat + se translate pour conserver distance raisonnable)
+21h00 Pause (30mn)
+22h40 Placeholders principaux modélisés (bois, torche, énergie)
+23h50 Scène basique modélisée (instances placées), script d'exportation vers texte OK

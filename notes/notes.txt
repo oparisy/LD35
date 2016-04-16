@@ -18,3 +18,17 @@ Coloration avec matériaux basiques pour avoir des points de repère
 
 Noter ce tuto pour terrain random (une autre fois !) :
 https://en.wikibooks.org/wiki/Blender_3D:_Noob_to_Pro/How_to_Do_Procedural_Landscape_Modeling
+
+Vraiment difficile de merger et couper les objets a posterio => prévoir dès leur modélisation
+leur non-intersection (avec eux-même et leur plan support)
+
+Vu au détour d'une exportation : le mode "smooth group" existe à l'exportation wavefront
+=> à étudier plus tard
+
+Script simple écrit pour exporter position, etc. objets visibles (permet de filter ce qui est exporté)
+Alt+D crée une instance (data partagées)
+
+Par principe j'ai appliqué (Ctrl + A) toutes les transformations aux meshes avant de les réexporter
+
+Seule manière simple d'exploiter le résultat de dumpscene.py : "Copy to Clipboard (as script)", puis enlever préfixes...
+Je ne sais pas comment obtenir les rotations en quaternion => exportation en euler XYZ
