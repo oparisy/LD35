@@ -16,7 +16,6 @@ var mat4    = require('gl-mat4')
 var mat3    = require('gl-mat3')
 var vec3    = require('gl-vec3')
 var quat    = require('gl-quat')
-var turntableCamera = require('turntable-camera')
 var GPControls = require('gp-controls')
 
 var gamepad = GPControls({
@@ -28,6 +27,8 @@ var keyPressed = require('key-pressed')
 
 var loader = require('./loader.js')
 var model = require('./model.js')
+var tools = require('./tools.js')
+var vec3FromArray = tools.vec3FromArray
 
 // Canvas & WebGL setup
 var canvas = document.body.appendChild(document.createElement('canvas'))
@@ -35,6 +36,10 @@ window.addEventListener('resize', fit(canvas), false)
 var gl = createContext(canvas, render)
 var clear = glClear({color: [ 0, 0, 0, 1 ], depth: true})
 gl.enable(gl.DEPTH_TEST)
+
+// Help in masking drawing artefacts (Z fighting) on some edges;
+// see zNear comment below
+gl.enable(gl.CULL_FACE)
 
 // Load models(a "P" is a promise)
 var toModel = model.toModel(gl)
@@ -62,12 +67,14 @@ var shader = glShader(gl,
 	"precision mediump float;\n#define GLSLIFY 1\r\nuniform vec3 v_color;\r\nvarying vec3 v_normal;\r\n\r\nvoid main() {\r\n\r\n\tvec3 normal = normalize(v_normal);\r\n\tvec4 color = vec4(0., 0., 0., 0.);\r\n\tvec4 diffuse = vec4(0., 0., 0., 1.);\r\n\tdiffuse.rgb = v_color.rgb;\r\n\tdiffuse.xyz *= max(dot(normal,vec3(0.,0.,1.)), 0.);\r\n\tcolor.xyz += diffuse.xyz;\r\n\tcolor = vec4(color.rgb, 1.0);\r\n\tgl_FragColor = color;\r\n\r\n  //gl_FragColor = vec4(color, 1.0);\r\n}\r\n")
 
 // Projection and camera setup
+var camera = require('lookat-camera')()
+camera.position = [-10, 50, 50]
+camera.up = [0, 1, 0]
 var PMatrix = mat4.create()
-var camera = turntableCamera()
-camera.downwards = Math.PI * 0.2
 
 // Main loop
 var lastDate = Date.now();
+var up = 0
 function render () {
   // Compute the time elasped since last render (in ms)
   var now = Date.now();
@@ -115,7 +122,8 @@ function render () {
   swapPressed |= keyPressed("<space>");
   
   if (swapPressed) {
-    console.log('Swap pressed')
+    // Debugging purpose
+    up+=0.1
   }
 
   // Move player; its (x,y) coordinate are on the ground plane
@@ -123,22 +131,37 @@ function render () {
   if (padx || pady) {
     player.x += 15*padx/(100*coef)
     player.y += 15*pady/(100*coef)
-    mat4.translate(player.model, mat4.create(), vec3.fromValues(player.x, 0, player.y))
-    console.log('Player position', player.x, player.y, player.model)
   }
 
-  // TODO Track player with camera
-  // Animate camera
-  //var x=padx/(100*coef),y=pady/(100*coef);
-  //camera.rotate([x,y], [0,0]);
+  // Always compute player position matrix (easier to debug this way)
+  mat4.translate(player.model, mat4.create(), vec3.fromValues(player.x, up, player.y))
 
-  mat4.perspective(PMatrix, Math.PI / 4, width / height, 0.001, 1000)
+  // Track player with camera
+  camera.target = [player.x, 0, player.y]
+  var cameraToPlayer = vec3.create()
+  vec3.subtract(cameraToPlayer, vec3FromArray(camera.target), vec3FromArray(camera.position))
+  var cameraPlayerDistance = vec3.length(cameraToPlayer)
+  console.log('cameraPlayerDistance', cameraPlayerDistance)
+  if (cameraPlayerDistance > 75 || cameraPlayerDistance < 60) {
+    var target = cameraPlayerDistance > 75 ? 75 : 60
+    var adjustment = vec3.create()
+    vec3.scale(adjustment, cameraToPlayer, (cameraPlayerDistance - target) /(100*coef))
+    adjustment[1] = 0 // We want to keep a constant height (altitude)
+    var newCameraPos = vec3.fromValues(camera.position[0], camera.position[1], camera.position[2])
+    vec3.add(newCameraPos, newCameraPos, adjustment)
+    camera.position = [newCameraPos[0], newCameraPos[1], newCameraPos[2]]
+  }
+  var VMatrix = camera.view()
+
+  // Update perspective matrix
+  // The zNear value should not be too small to avoid z fighting
+  // See http://www.gamedev.net/topic/626726-how-to-solve-z-buffer-fighting/
+  // Note that backface culling will mostly hide it
+  mat4.perspective(PMatrix, Math.PI / 4, width / height, 0.1, 1000)
 
   // Update camera rotation angle
   // camera.rotation = Date.now() * 0.0002
 
-  // Model matrix is ID here
-  var VMatrix = camera.view()
   // var MVMatrix = VMatrix // * ID
   // var MVPMatrix = mat4.create()
   // mat4.multiply(MVPMatrix, PMatrix, MVMatrix)
@@ -168,7 +191,7 @@ function computeNormalMatrix (MVMatrix) {
   mat3.normalFromMat4(normalMatrix, MVMatrix)
   return normalMatrix
 }
-},{"./loader.js":2,"./model.js":3,"canvas-fit":13,"gl-clear":59,"gl-context":62,"gl-mat3":76,"gl-mat4":94,"gl-quat":119,"gl-shader":136,"gl-vec3":158,"gp-controls":200,"key-pressed":210,"q":218,"turntable-camera":237}],2:[function(require,module,exports){
+},{"./loader.js":2,"./model.js":3,"./tools.js":248,"canvas-fit":13,"gl-clear":59,"gl-context":62,"gl-mat3":76,"gl-mat4":94,"gl-quat":119,"gl-shader":136,"gl-vec3":158,"gp-controls":200,"key-pressed":210,"lookat-camera":211,"q":219}],2:[function(require,module,exports){
 /* jshint node: true */
 /* jslint browser: true */
 /* jslint asi: true */
@@ -202,7 +225,7 @@ function loadObj (objurl, mtlurl) {
 module.exports = {
 		loadObj: loadObj
 }
-},{"obj-mtl-loader":214,"q":218}],3:[function(require,module,exports){
+},{"obj-mtl-loader":215,"q":219}],3:[function(require,module,exports){
 /* jshint node: true */
 /* jslint browser: true */
 /* jslint asi: true */
@@ -371,7 +394,7 @@ function convertFaces(faces) {
 module.exports = {
 		toModel: toModel
 }
-},{"chai":14,"gl-geometry":64,"normals":213,"q":218}],4:[function(require,module,exports){
+},{"chai":14,"gl-geometry":64,"normals":214,"q":219}],4:[function(require,module,exports){
 var padLeft = require('pad-left')
 
 module.exports = addLineNumbers
@@ -389,7 +412,7 @@ function addLineNumbers (string, start, delim) {
   }).join('\n')
 }
 
-},{"pad-left":216}],5:[function(require,module,exports){
+},{"pad-left":217}],5:[function(require,module,exports){
 var dtype = require('dtype')
 
 module.exports = pack
@@ -9002,7 +9025,7 @@ function createBuffer(gl, data, type, usage) {
 
 module.exports = createBuffer
 
-},{"ndarray":212,"ndarray-ops":211,"typedarray-pool":240}],58:[function(require,module,exports){
+},{"ndarray":213,"ndarray-ops":212,"typedarray-pool":240}],58:[function(require,module,exports){
 exports.color = function(color) {
   return array(color, [0, 0, 0, 1])
 }
@@ -9423,7 +9446,7 @@ function createContext(canvas, opts, render) {
   }
 }
 
-},{"raf-component":219}],63:[function(require,module,exports){
+},{"raf-component":220}],63:[function(require,module,exports){
 
 var sprintf = require('sprintf-js').sprintf;
 var glConstants = require('gl-constants/lookup');
@@ -9478,7 +9501,7 @@ function formatCompilerError(errLog, src, type) {
 }
 
 
-},{"add-line-numbers":4,"gl-constants/lookup":61,"glsl-shader-name":192,"sprintf-js":232}],64:[function(require,module,exports){
+},{"add-line-numbers":4,"gl-constants/lookup":61,"glsl-shader-name":192,"sprintf-js":233}],64:[function(require,module,exports){
 var normalize = require('./normalize')
 var glType = require('gl-to-dtype')
 var createVAO = require('gl-vao')
@@ -15195,6 +15218,30 @@ function keydown(e) {
 
 }).call(this,require('_process'))
 },{"_process":11,"vkey":242}],211:[function(require,module,exports){
+var lookAt = require('gl-mat4/lookAt')
+
+module.exports = Camera
+
+function Camera() {
+  if (!(this instanceof Camera))
+    return new Camera
+
+  this.target   = new Float32Array([0,  0,  0])
+  this.position = new Float32Array([0,  5, 10])
+  this.up       = new Float32Array([0,  1,  0])
+}
+
+var scratch = new Float32Array(16)
+
+Camera.prototype.view = function(view) {
+  view = view || scratch
+
+  lookAt(view, this.position, this.target, this.up)
+
+  return view
+}
+
+},{"gl-mat4/lookAt":96}],212:[function(require,module,exports){
 "use strict"
 
 var compile = require("cwise-compiler")
@@ -15657,7 +15704,7 @@ exports.equals = compile({
 
 
 
-},{"cwise-compiler":44}],212:[function(require,module,exports){
+},{"cwise-compiler":44}],213:[function(require,module,exports){
 var iota = require("iota-array")
 var isBuffer = require("is-buffer")
 
@@ -16002,7 +16049,7 @@ function wrappedNDArrayCtor(data, shape, stride, offset) {
 
 module.exports = wrappedNDArrayCtor
 
-},{"iota-array":203,"is-buffer":205}],213:[function(require,module,exports){
+},{"iota-array":203,"is-buffer":205}],214:[function(require,module,exports){
 var EPSILON = 1e-6;
 
 //Estimate the vertex normals of a mesh
@@ -16123,7 +16170,7 @@ exports.faceNormals = function(faces, positions) {
 
 
 
-},{}],214:[function(require,module,exports){
+},{}],215:[function(require,module,exports){
 var stream = require('stream');
 var split = require('split');
 var xhr = require('xhr');
@@ -16377,7 +16424,7 @@ ObjLoader.prototype.parseMtl = function(line, currentMat) {
 
 module.exports = ObjLoader;
 
-},{"split":231,"stream":233,"xhr":246}],215:[function(require,module,exports){
+},{"split":232,"stream":234,"xhr":246}],216:[function(require,module,exports){
 module.exports = once
 
 once.proto = once(function () {
@@ -16398,7 +16445,7 @@ function once (fn) {
   }
 }
 
-},{}],216:[function(require,module,exports){
+},{}],217:[function(require,module,exports){
 /*!
  * pad-left <https://github.com/jonschlinkert/pad-left>
  *
@@ -16414,7 +16461,7 @@ module.exports = function padLeft(str, num, ch) {
   ch = typeof ch !== 'undefined' ? (ch + '') : ' ';
   return repeat(ch, num) + str;
 };
-},{"repeat-string":230}],217:[function(require,module,exports){
+},{"repeat-string":231}],218:[function(require,module,exports){
 var trim = require('trim')
   , forEach = require('for-each')
   , isArray = function(arg) {
@@ -16446,7 +16493,7 @@ module.exports = function (headers) {
 
   return result
 }
-},{"for-each":55,"trim":236}],218:[function(require,module,exports){
+},{"for-each":55,"trim":237}],219:[function(require,module,exports){
 (function (process){
 // vim:ts=4:sts=4:sw=4:
 /*!
@@ -18498,7 +18545,7 @@ return Q;
 });
 
 }).call(this,require('_process'))
-},{"_process":11}],219:[function(require,module,exports){
+},{"_process":11}],220:[function(require,module,exports){
 /**
  * Expose `requestAnimationFrame()`.
  */
@@ -18538,10 +18585,10 @@ exports.cancel = function(id){
   cancel.call(window, id);
 };
 
-},{}],220:[function(require,module,exports){
+},{}],221:[function(require,module,exports){
 module.exports = require("./lib/_stream_duplex.js")
 
-},{"./lib/_stream_duplex.js":221}],221:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":222}],222:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -18634,7 +18681,7 @@ function forEach (xs, f) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_readable":223,"./_stream_writable":225,"_process":11,"core-util-is":43,"inherits":202}],222:[function(require,module,exports){
+},{"./_stream_readable":224,"./_stream_writable":226,"_process":11,"core-util-is":43,"inherits":202}],223:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -18682,7 +18729,7 @@ PassThrough.prototype._transform = function(chunk, encoding, cb) {
   cb(null, chunk);
 };
 
-},{"./_stream_transform":224,"core-util-is":43,"inherits":202}],223:[function(require,module,exports){
+},{"./_stream_transform":225,"core-util-is":43,"inherits":202}],224:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -19668,7 +19715,7 @@ function indexOf (xs, x) {
 }
 
 }).call(this,require('_process'))
-},{"_process":11,"buffer":12,"core-util-is":43,"events":54,"inherits":202,"isarray":208,"stream":233,"string_decoder/":234}],224:[function(require,module,exports){
+},{"_process":11,"buffer":12,"core-util-is":43,"events":54,"inherits":202,"isarray":208,"stream":234,"string_decoder/":235}],225:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -19880,7 +19927,7 @@ function done(stream, er) {
   return stream.push(null);
 }
 
-},{"./_stream_duplex":221,"core-util-is":43,"inherits":202}],225:[function(require,module,exports){
+},{"./_stream_duplex":222,"core-util-is":43,"inherits":202}],226:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -20270,10 +20317,10 @@ function endWritable(stream, state, cb) {
 }
 
 }).call(this,require('_process'))
-},{"./_stream_duplex":221,"_process":11,"buffer":12,"core-util-is":43,"inherits":202,"stream":233}],226:[function(require,module,exports){
+},{"./_stream_duplex":222,"_process":11,"buffer":12,"core-util-is":43,"inherits":202,"stream":234}],227:[function(require,module,exports){
 module.exports = require("./lib/_stream_passthrough.js")
 
-},{"./lib/_stream_passthrough.js":222}],227:[function(require,module,exports){
+},{"./lib/_stream_passthrough.js":223}],228:[function(require,module,exports){
 (function (process){
 var Stream = require('stream'); // hack to fix a circular dependency issue when used with browserify
 exports = module.exports = require('./lib/_stream_readable.js');
@@ -20288,13 +20335,13 @@ if (!process.browser && process.env.READABLE_STREAM === 'disable') {
 }
 
 }).call(this,require('_process'))
-},{"./lib/_stream_duplex.js":221,"./lib/_stream_passthrough.js":222,"./lib/_stream_readable.js":223,"./lib/_stream_transform.js":224,"./lib/_stream_writable.js":225,"_process":11,"stream":233}],228:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":222,"./lib/_stream_passthrough.js":223,"./lib/_stream_readable.js":224,"./lib/_stream_transform.js":225,"./lib/_stream_writable.js":226,"_process":11,"stream":234}],229:[function(require,module,exports){
 module.exports = require("./lib/_stream_transform.js")
 
-},{"./lib/_stream_transform.js":224}],229:[function(require,module,exports){
+},{"./lib/_stream_transform.js":225}],230:[function(require,module,exports){
 module.exports = require("./lib/_stream_writable.js")
 
-},{"./lib/_stream_writable.js":225}],230:[function(require,module,exports){
+},{"./lib/_stream_writable.js":226}],231:[function(require,module,exports){
 /*!
  * repeat-string <https://github.com/jonschlinkert/repeat-string>
  *
@@ -20364,7 +20411,7 @@ function repeat(str, num) {
 }
 
 
-},{}],231:[function(require,module,exports){
+},{}],232:[function(require,module,exports){
 //filter will reemit the data if cb(err,pass) pass is truthy
 
 // reduce is more tricky
@@ -20429,7 +20476,7 @@ function split (matcher, mapper, options) {
 }
 
 
-},{"string_decoder":234,"through":235}],232:[function(require,module,exports){
+},{"string_decoder":235,"through":236}],233:[function(require,module,exports){
 (function(window) {
     var re = {
         not_string: /[^s]/,
@@ -20639,7 +20686,7 @@ function split (matcher, mapper, options) {
     }
 })(typeof window === "undefined" ? this : window);
 
-},{}],233:[function(require,module,exports){
+},{}],234:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -20768,7 +20815,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":54,"inherits":202,"readable-stream/duplex.js":220,"readable-stream/passthrough.js":226,"readable-stream/readable.js":227,"readable-stream/transform.js":228,"readable-stream/writable.js":229}],234:[function(require,module,exports){
+},{"events":54,"inherits":202,"readable-stream/duplex.js":221,"readable-stream/passthrough.js":227,"readable-stream/readable.js":228,"readable-stream/transform.js":229,"readable-stream/writable.js":230}],235:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -20991,7 +21038,7 @@ function base64DetectIncompleteChar(buffer) {
   this.charLength = this.charReceived ? 3 : 0;
 }
 
-},{"buffer":12}],235:[function(require,module,exports){
+},{"buffer":12}],236:[function(require,module,exports){
 (function (process){
 var Stream = require('stream')
 
@@ -21103,7 +21150,7 @@ function through (write, end, opts) {
 
 
 }).call(this,require('_process'))
-},{"_process":11,"stream":233}],236:[function(require,module,exports){
+},{"_process":11,"stream":234}],237:[function(require,module,exports){
 
 exports = module.exports = trim;
 
@@ -21119,42 +21166,7 @@ exports.right = function(str){
   return str.replace(/\s*$/, '');
 };
 
-},{}],237:[function(require,module,exports){
-var mat4 = require('gl-mat4')
-
-module.exports = TurntableCamera
-
-function TurntableCamera() {
-  if (!(this instanceof TurntableCamera))
-    return new TurntableCamera
-
-  this.data = new Float32Array(16)
-  this.center = new Float32Array(3)
-  this.rotation = 0
-  this.distance  = 30
-  this.downwards = 0
-}
-
-var translation = new Float32Array([ 0, 0, 0 ])
-var scratch = new Float32Array(16)
-
-TurntableCamera.prototype.view = function(data) {
-  data = data || this.data
-
-  mat4.identity(data)
-  translation[2] = -this.distance
-  translation[1] = -Math.tan(this.downwards) * this.distance
-  mat4.translate(data, data, translation)
-  mat4.rotateY(data, data, this.rotation)
-  mat4.translate(data, data, this.center)
-  mat4.identity(scratch)
-  mat4.rotateX(scratch, scratch, this.downwards)
-  mat4.multiply(data, scratch, data)
-
-  return data
-}
-
-},{"gl-mat4":94}],238:[function(require,module,exports){
+},{}],238:[function(require,module,exports){
 arguments[4][49][0].apply(exports,arguments)
 },{"./lib/type":239,"C:\\Users\\Olivier\\git\\LD35\\node_modules\\deep-eql\\node_modules\\type-detect\\index.js":49}],239:[function(require,module,exports){
 /*!
@@ -21996,7 +22008,7 @@ function _createXHR(options) {
 
 function noop() {}
 
-},{"global/window":191,"is-function":206,"once":215,"parse-headers":217,"xtend":247}],247:[function(require,module,exports){
+},{"global/window":191,"is-function":206,"once":216,"parse-headers":218,"xtend":247}],247:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -22017,4 +22029,21 @@ function extend() {
     return target
 }
 
-},{}]},{},[1]);
+},{}],248:[function(require,module,exports){
+/* jshint node: true */
+/* jslint node: true */
+/* jshint strict:false */
+/* jslint browser: true */
+/* jslint asi: true */
+'use strict'
+
+var vec3 = require('gl-vec3')
+
+function vec3FromArray (arr) {
+  return vec3.fromValues(arr[0], arr[1], arr[2])
+}
+
+module.exports = {
+    vec3FromArray: vec3FromArray
+}
+},{"gl-vec3":158}]},{},[1]);

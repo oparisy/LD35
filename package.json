@@ -34,7 +34,8 @@
 	"gp-controls": "0.0.0",
 	"orbit-camera": "1.0.0",
 	"key-pressed": "0.0.1",
-	"turntable-camera": "latest"
+	"turntable-camera": "latest",
+	"lookat-camera": "latest"
   },
   "browserify": {
     "transform": [

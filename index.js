@@ -15,7 +15,6 @@ var mat4    = require('gl-mat4')
 var mat3    = require('gl-mat3')
 var vec3    = require('gl-vec3')
 var quat    = require('gl-quat')
-var turntableCamera = require('turntable-camera')
 var GPControls = require('gp-controls')
 
 var gamepad = GPControls({
@@ -27,6 +26,8 @@ var keyPressed = require('key-pressed')
 
 var loader = require('./loader.js')
 var model = require('./model.js')
+var tools = require('./tools.js')
+var vec3FromArray = tools.vec3FromArray
 
 // Canvas & WebGL setup
 var canvas = document.body.appendChild(document.createElement('canvas'))
@@ -34,6 +35,10 @@ window.addEventListener('resize', fit(canvas), false)
 var gl = createContext(canvas, render)
 var clear = glClear({color: [ 0, 0, 0, 1 ], depth: true})
 gl.enable(gl.DEPTH_TEST)
+
+// Help in masking drawing artefacts (Z fighting) on some edges;
+// see zNear comment below
+gl.enable(gl.CULL_FACE)
 
 // Load models(a "P" is a promise)
 var toModel = model.toModel(gl)
@@ -61,12 +66,14 @@ var shader = glShader(gl,
 	glslify('./shaders/flat.frag'))
 
 // Projection and camera setup
+var camera = require('lookat-camera')()
+camera.position = [-10, 50, 50]
+camera.up = [0, 1, 0]
 var PMatrix = mat4.create()
-var camera = turntableCamera()
-camera.downwards = Math.PI * 0.2
 
 // Main loop
 var lastDate = Date.now();
+var up = 0
 function render () {
   // Compute the time elasped since last render (in ms)
   var now = Date.now();
@@ -114,7 +121,8 @@ function render () {
   swapPressed |= keyPressed("<space>");
   
   if (swapPressed) {
-    console.log('Swap pressed')
+    // Debugging purpose
+    up+=0.1
   }
 
   // Move player; its (x,y) coordinate are on the ground plane
@@ -122,21 +130,36 @@ function render () {
   if (padx || pady) {
     player.x += 15*padx/(100*coef)
     player.y += 15*pady/(100*coef)
-    mat4.translate(player.model, mat4.create(), vec3.fromValues(player.x, 0, player.y))
   }
 
-  // TODO Track player with camera
-  // Animate camera
-  //var x=padx/(100*coef),y=pady/(100*coef);
-  //camera.rotate([x,y], [0,0]);
+  // Always compute player position matrix (easier to debug this way)
+  mat4.translate(player.model, mat4.create(), vec3.fromValues(player.x, up, player.y))
 
-  mat4.perspective(PMatrix, Math.PI / 4, width / height, 0.001, 1000)
+  // Track player with camera
+  camera.target = [player.x, 0, player.y]
+  var cameraToPlayer = vec3.create()
+  vec3.subtract(cameraToPlayer, vec3FromArray(camera.target), vec3FromArray(camera.position))
+  var cameraPlayerDistance = vec3.length(cameraToPlayer)
+  if (cameraPlayerDistance > 75 || cameraPlayerDistance < 60) {
+    var target = cameraPlayerDistance > 75 ? 75 : 60
+    var adjustment = vec3.create()
+    vec3.scale(adjustment, cameraToPlayer, (cameraPlayerDistance - target) /(100*coef))
+    adjustment[1] = 0 // We want to keep a constant height (altitude)
+    var newCameraPos = vec3.fromValues(camera.position[0], camera.position[1], camera.position[2])
+    vec3.add(newCameraPos, newCameraPos, adjustment)
+    camera.position = [newCameraPos[0], newCameraPos[1], newCameraPos[2]]
+  }
+  var VMatrix = camera.view()
+
+  // Update perspective matrix
+  // The zNear value should not be too small to avoid z fighting
+  // See http://www.gamedev.net/topic/626726-how-to-solve-z-buffer-fighting/
+  // Note that backface culling will mostly hide it
+  mat4.perspective(PMatrix, Math.PI / 4, width / height, 0.1, 1000)
 
   // Update camera rotation angle
   // camera.rotation = Date.now() * 0.0002
 
-  // Model matrix is ID here
-  var VMatrix = camera.view()
   // var MVMatrix = VMatrix // * ID
   // var MVPMatrix = mat4.create()
   // mat4.multiply(MVPMatrix, PMatrix, MVMatrix)
