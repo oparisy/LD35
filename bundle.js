@@ -70,9 +70,6 @@ var inProgressTorches = {}
 var lightTorches = 0
 var particleEngines = []
 
-// Testing purpose
-particleEngines.push(buildFireEngine(gl, [0, 0.5, -5], 1))
-
 // Main loop
 var lastDate = Date.now()
 function render () {
