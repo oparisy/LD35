@@ -21,6 +21,8 @@ var vec3FromArray = tools.vec3FromArray
 var computeNormalMatrix = tools.computeNormalMatrix
 var getInput = require('./lib/input.js').getInput
 
+var i
+
 // Canvas & WebGL setup
 var canvas = document.body.appendChild(document.createElement('canvas'))
 window.addEventListener('resize', fit(canvas), false)
@@ -62,9 +64,9 @@ var waitForUnpress = false
 var state = 'water'
 var lastFireEnergyConsumption
 var inProgressTorches = {}
+var lightTorches = 0
 
 // Main loop
-var i
 var lastDate = Date.now()
 function render () {
   // Compute the time elasped since last render (in ms)
@@ -155,7 +157,7 @@ function render () {
     }
   }
   
-  // Reset torches from which we have moved away
+  // Reset counters of torches we have moved away from
   for (i=0; i<assets.sceneEntities; i++) {
     if (toReset[assets.sceneEntities[i]]) {
       inProgressTorches[assets.sceneEntities[i]] = undefined
@@ -207,7 +209,7 @@ function render () {
     }
   }
 
-  if (assets.energyModel) {
+  if (assets.energyModel && assets.torchIcon) {
     drawHUD(width, height, energyLevel, assets)
   }
 }
@@ -223,6 +225,10 @@ function setOnFire(entity) {
   
   entity.onFire = true
   console.log(entity.kind + ' set on fire')
+  
+  if (entity.kind == 'Torch') {
+    lightTorches++
+  }
 }
 
 function switchToFireState() {
@@ -257,24 +263,33 @@ function findNear(sceneEntities, kind, minDistance, x, y) {
 
 function drawHUD(width, height, energyLevel, assets) {
   // Change to an ortho matrix to draw HUD
-  // Arguments are: ortho(out:mat4, left:number, right:number, bottom:number, top:number, near:number, far:number)
-  // See http://stackoverflow.com/a/6091781/38096
   var POrtho = mat4.create()
   mat4.ortho(POrtho, 0, width, 0, height, -1000, 1000)
   // TODO This would be easier but shading and orientation issues    
+  // See http://stackoverflow.com/a/6091781/38096
   // mat4.ortho(POrtho, 0, width, height, 0, -1000, 1000)
 
   var VOrtho = mat4.create()
 
+  // Draw energy
   var jaugeCenter = vec3.fromValues(100, height - 100, 0)
 
+  var MHud
   for (var c=0; c<energyLevel; c++) {
-    var MHud = mat4.create()
+    MHud = mat4.create()
     mat4.translate(MHud, MHud, jaugeCenter)
     mat4.rotateZ(MHud, MHud, - c * 2 * Math.PI / maxEnergyLevel)
 
     drawModel(assets.energyModel, MHud, VOrtho, POrtho)
   }  
+
+  // Draw torch icons
+  for (c=0; c<lightTorches; c++) {
+    var iconPos = vec3.fromValues(250 + c*80, height - 100, 0)
+    MHud = mat4.create()
+    mat4.translate(MHud, MHud, iconPos)
+    drawModel(assets.torchIcon, MHud, VOrtho, POrtho)
+  }
 }
 
 function drawModel(model, MMatrix, VMatrix, PMatrix) {

@@ -6,7 +6,7 @@ Plan :
  * [Fait, 10h30] charger scène
  * [Fait, 12h15] jauge énergie (ortho)
  * [Fait, 15h00] coder comportements basiques énergie
- * ajouter jauge "torches" et code associé
+ * [Fait, 16h50] ajouter jauge "torches" et code associé
  * ajouter ennemis (placeholders + IA basique)
  * écrire moteur de particules basique pour joueur
  * modéliser ressources, éléments de décors et ennemis
@@ -19,3 +19,5 @@ Bugs :
  * position des entités de scène chargées ne correspond pas au .blend
    (tester avec scene.json écrit à la main)
  * le backface culling pose problème avec les torches, je dois remettre des faces
+ * l'allumage de la première torche respecte le délai, celui des suivantes est instantané ?
+ 
