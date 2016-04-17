@@ -10,7 +10,7 @@ Plan :
  * [Fait, 19h30] écrire moteur de particules basique
  * [Fait, 23h00] ajouter ennemis (système de particules + IA basique)
  * [Fait, 00h15] Conditions de victoire et échec, toutes "règles" prévues implémentées
- * Remplacer joueur par deux systèmes de particules (suivant son état)
+ * [Fait, 02h00] Remplacer joueur par deux systèmes de particules (suivant son état)
  * Polish gameplay (débug)
 
 Bugs :

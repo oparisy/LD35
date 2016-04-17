@@ -66,6 +66,9 @@ var woodpileEnergy = 3
 var maxEnergyLevel = 16
 var nbEnemies = 6
 var playerSpeed = 20
+var waterColor = [0, 0.2, 0.8]
+var fireColor = [0.8, 0.2, 0]
+var playerColor = waterColor
 
 // Game and player states
 var energyLevel = initialEnergy // At most maxEnergyLevel
@@ -78,6 +81,7 @@ var particleEngines = []
 var enemies = spawnEnemies()
 var gameover = false
 var victory = false
+var playerEmitter
 
 // Main loop
 var lastDate = Date.now()
@@ -183,11 +187,19 @@ function render () {
     player.x += playerSpeed*input.padx/(100*coef)
     player.y += playerSpeed*input.pady/(100*coef)
   }
-  
+
   // Update enemies behavior and position
   for (i=0; i<enemies.length; i++) {
     enemies[i].step(step, player, state)
   }
+  
+  // Lazily create player emitter
+  if (!playerEmitter) {
+    playerEmitter = spawnPlayer(player)
+  }
+
+  // Update player emitter
+  playerEmitter.updatePosition(vec3.fromValues(player.x, state == 'water' ? 5.0 : 0.5, player.y))
   
   // Update particles emitters
   for (i=0; i<particleEngines.length; i++) {
@@ -216,8 +228,13 @@ function render () {
   // Draw player and ground
   for (i=0; i<assets.models.length; i++) {
     var model = assets.models[i]
+    if (!model.isGround) {
+      // The player placeholder is not needed anymore
+      continue
+    }
+
     var MMatrix = model.model
-    drawModel(model, MMatrix, VMatrix, PMatrix, model.isGround ? unlitShader : shader)
+    drawModel(model, MMatrix, VMatrix, PMatrix, shader /*model.isGround ? unlitShader : shader*/)
   }
 
   // Draw assets (wood, torch)
@@ -251,8 +268,32 @@ function render () {
   }
 }
 
+function spawnPlayer(player) {
+  var spawnPosition = [player.x, 5.0, player.y]
+  var emitteropt = {
+      emitterPos: spawnPosition,
+      emitterRadius: 2.0,
+      emissionDelay: 5,
+      minttl: 200,
+      minSpeed: -0.15,
+      fizzleScale: false,
+      scale: [4.5, 4.5, 4.5],
+      colorfun: function(particle) {
+        var c = Math.min(1, particle.ttl / 150)
+        return [playerColor[0], playerColor[1] * c, playerColor[2] * c]
+      }
+  }
+  var emitter = buildEmitter(gl, emitteropt)
+  particleEngines.push(emitter)
+  return emitter
+}
+
 function spawnEnemies() {
   var result = []
+  var colorFun = function(particle) {
+    var c = (1.5 + Math.cos(particle.ttl / 100)) / 2
+    return [c, c, c]
+  }
   for (i=0; i<nbEnemies; i++) {
     var spawnAngle = 2*Math.PI*Math.random()
     var spawnPosition = [30*Math.cos(spawnAngle), 0.5, 30*Math.sin(spawnAngle)]
@@ -263,7 +304,8 @@ function spawnEnemies() {
         minttl: 300,
         minSpeed: 0.1,
         fizzleScale: true,
-        scale: [4, 4, 4]
+        scale: [4, 4, 4],
+        colorfun: colorFun
     }
     var emitter = buildEmitter(gl, emitteropt)
     particleEngines.push(emitter)
@@ -315,7 +357,10 @@ function setOnFire(entity) {
       minttl: 300,
       minSpeed: 0.1,
       fizzleScale: true,
-      scale: [4, 4, 4]
+      scale: [4, 4, 4],
+      initcolorfun: function(particle) {
+        return [0.7 + 0.3*Math.random(), 0.4 + Math.random()/4, 0]
+      }
   }
 
   switch (entity.kind) {
@@ -334,10 +379,14 @@ function setOnFire(entity) {
 
 function switchToFireState() {
   state = 'fire'
+  playerColor = fireColor
+  playerEmitter.opt.minSpeed = 0.1
 }
 
 function switchToWaterState() {
   state = 'water'
+  playerColor = waterColor
+  playerEmitter.opt.minSpeed = -0.1
 }
 
 /** Brute force "nearest assets" search */
