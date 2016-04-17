@@ -9,11 +9,9 @@ Plan :
  * [Fait, 16h50] ajouter jauge "torches" et code associé
  * [Fait, 19h30] écrire moteur de particules basique
  * [Fait, 23h00] ajouter ennemis (système de particules + IA basique)
+ * [Fait, 00h15] Conditions de victoire et échec, toutes "règles" prévues implémentées
  * Remplacer joueur par deux systèmes de particules (suivant son état)
- * [Objectif : 00h] Conditions de victoire et échec
  * Polish gameplay (débug)
- * Polish ressources
- * Ecran de chargement
 
 Bugs :
  * Prévoir un déplacement du joueur fonction de la caméra, ou de mieux la placer, sinon soucis si déplacements lointains
@@ -26,6 +24,7 @@ Bugs :
  * Supprimer le "cheat code"
  * Parfois le bois donne trop d'énergie ? Mode de reproduction ?
  * Quand on est repassé "automatiquement" en mode eau on peut parfois
+ * On doit faire F5 la première fois sur github pour jouer
  
 Renoncés :
  * Eclairage dynamique (au centre des émetteurs de particules)
@@ -33,3 +32,5 @@ Renoncés :
  * Musique
  * Sons (FX)
  * Points dans rules.txt
+ * Ecran de chargement
+ * Polish ressources

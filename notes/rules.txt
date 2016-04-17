@@ -6,11 +6,10 @@
  * [Fait] l'état "eau" permet de collecter du combustible (le combustible est une ressource à collecter en passant à proximité)
  * [Fait] l'état "feu" enflamme le combustible sans remplir la jauge
  * [Fait] l'état "feu" enflamme une torche si l'on est suffisamment proche, et après un délai
-
- * condition de fin de niveau : enflammer des objectifs (torches / monuments) façon counter strike
- * des ennemis avec aggro
- * La jauge d'énergie peut descendre en mode eau si contact avec ennemis
- * La jauge d'énergie représente la "vie" => game over si à 0
+ * [Fait] des ennemis avec aggro
+ * [Fait] La jauge d'énergie peut descendre en mode eau si contact avec ennemis
+ * [Fait] condition de fin de niveau : enflammer des objectifs (torches / monuments) façon counter strike
+ * [Fait] La jauge d'énergie représente la "vie" => game over si à 0
 
 Renoncé :
  * les ennemis sont plus proches (attirés ?) des objectifs, leur aggro augmente si on s'en approche ?

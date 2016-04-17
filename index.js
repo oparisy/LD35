@@ -175,7 +175,7 @@ function render () {
 
   // Move player; its (x,y) coordinate are on the ground plane
   // Note that in world space, Y is up
-  if (input.padx || input.pady) {
+  if ((input.padx || input.pady) && !(victory || gameover)) {
     player.x += playerSpeed*input.padx/(100*coef)
     player.y += playerSpeed*input.pady/(100*coef)
   }
@@ -233,18 +233,17 @@ function render () {
     particleEngines[i].draw(VMatrix, PMatrix)
   }
 
-  // Finally, draw HUD
-  if (assets.energyModel && assets.torchIcon) {
-    drawHUD(width, height, energyLevel, assets)
-  }
-
-  // Tested last to ensure everything is drawn in its latest state (HUD...) 
+  // Tested last to ensure everything is drawn in its latest state
   if (energyLevel <= 0) {
     gameover = true
   }
 
   if (lightTorches >= sceneEntities.numTorches) {
     victory = true
+  }
+  // Finally, draw HUD
+  if (assets.energyModel && assets.torchIcon) {
+    drawHUD(width, height, energyLevel, assets, victory, gameover)
   }
 }
 
@@ -362,7 +361,7 @@ function findNear(sceneEntities, kind, minDistance, x, y) {
   return result
 }
 
-function drawHUD(width, height, energyLevel, assets) {
+function drawHUD(width, height, energyLevel, assets, victory, gameover) {
   // Change to an ortho matrix to draw HUD
   var POrtho = mat4.create()
   mat4.ortho(POrtho, 0, width, 0, height, -1000, 1000)
@@ -390,6 +389,20 @@ function drawHUD(width, height, energyLevel, assets) {
     MHud = mat4.create()
     mat4.translate(MHud, MHud, iconPos)
     drawModel(assets.torchIcon, MHud, VOrtho, POrtho, shader)
+  }
+  
+  // Draw end game pictos
+  if (victory || gameover) {
+    var center = vec3.fromValues(width / 2, height / 2, 0)
+    MHud = mat4.create()
+    var scale = 2 + Math.cos(Date.now() / 500)
+    mat4.translate(MHud, MHud, center)
+    mat4.scale(MHud, MHud, vec3.fromValues(scale, scale, scale))
+    if (victory) {
+      drawModel(assets.victory, MHud, VOrtho, POrtho, shader)
+    } else if (gameover) {
+      drawModel(assets.gameover, MHud, VOrtho, POrtho, shader)
+    }
   }
 }
 
