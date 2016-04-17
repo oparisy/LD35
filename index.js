@@ -18,9 +18,11 @@ var quat    = require('gl-quat')
 
 var tools = require('./lib/tools.js')
 var vec3FromArray = tools.vec3FromArray
-var computeNormalMatrix = tools.computeNormalMatrix
 var getInput = require('./lib/input.js').getInput
+var drawModel = require('./lib/model.js').draw
+var buildFireEngine = require('./lib/fire.js')
 
+// Commonly used
 var i
 
 // Canvas & WebGL setup
@@ -65,6 +67,10 @@ var state = 'water'
 var lastFireEnergyConsumption
 var inProgressTorches = {}
 var lightTorches = 0
+var particleEngines = []
+
+// Testing purpose
+particleEngines.push(buildFireEngine(gl, [0, 0.5, -5], 1))
 
 // Main loop
 var lastDate = Date.now()
@@ -165,10 +171,15 @@ function render () {
   }
 
   // Move player; its (x,y) coordinate are on the ground plane
-  // Note that in world space, Y is up 
+  // Note that in world space, Y is up
   if (input.padx || input.pady) {
     player.x += 15*input.padx/(100*coef)
     player.y += 15*input.pady/(100*coef)
+  }
+  
+  // Update particles emitters
+  for (i=0; i<particleEngines.length; i++) {
+    particleEngines[i].step(step)
   }
 
   // Always compute player position matrix (easier to debug this way)
@@ -194,7 +205,7 @@ function render () {
   for (i=0; i<assets.models.length; i++) {
     var model = assets.models[i]
     var MMatrix = model.model
-    drawModel(model, MMatrix, VMatrix, PMatrix)
+    drawModel(model, MMatrix, VMatrix, PMatrix, shader)
   }
 
   // Draw assets (wood, torch)
@@ -205,10 +216,16 @@ function render () {
       if (entity.hidden) {
         continue
       }
-      drawModel(entity.model, entity.matrix, VMatrix, PMatrix)
+      drawModel(entity.model, entity.matrix, VMatrix, PMatrix, shader)
     }
   }
+  
+  // Draw particles
+  for (i=0; i<particleEngines.length; i++) {
+    particleEngines[i].draw(VMatrix, PMatrix)
+  }
 
+  // Finally, draw HUD
   if (assets.energyModel && assets.torchIcon) {
     drawHUD(width, height, energyLevel, assets)
   }
@@ -224,11 +241,22 @@ function setOnFire(entity) {
   }
   
   entity.onFire = true
-  console.log(entity.kind + ' set on fire')
   
-  if (entity.kind == 'Torch') {
-    lightTorches++
+  // TODO Another con
+  var pos = [entity.matrix[12], entity.matrix[13], entity.matrix[14]]
+
+  switch (entity.kind) {
+    case 'Torch':
+      lightTorches++
+      pos[1] += 3
+      particleEngines.push(buildFireEngine(gl, pos, 1))
+      break;
+    case 'Woodpile':
+      pos[1] += 1
+      particleEngines.push(buildFireEngine(gl, pos, 1))
   }
+
+  console.log(entity.kind + ' set on fire, new emitter at ' + pos)
 }
 
 function switchToFireState() {
@@ -249,7 +277,10 @@ function findNear(sceneEntities, kind, minDistance, x, y) {
     }
     
     var modelMat = entity.matrix
-    var modelPos = vec3.fromValues(modelMat[12], modelMat[14], modelMat[13]) // TODO Those different spaces are a pain
+    
+    // TODO Those different spaces are a pain
+    var modelPos = vec3.fromValues(modelMat[12], modelMat[14], modelMat[13])
+
     var playerPos = vec3.fromValues(x, y, 0)
     var modelToPlayer = vec3.create()
     vec3.subtract(modelToPlayer, playerPos, modelPos)
@@ -265,7 +296,7 @@ function drawHUD(width, height, energyLevel, assets) {
   // Change to an ortho matrix to draw HUD
   var POrtho = mat4.create()
   mat4.ortho(POrtho, 0, width, 0, height, -1000, 1000)
-  // TODO This would be easier but shading and orientation issues    
+  // TODO This would be easier but shading and orientation issues
   // See http://stackoverflow.com/a/6091781/38096
   // mat4.ortho(POrtho, 0, width, height, 0, -1000, 1000)
 
@@ -280,7 +311,7 @@ function drawHUD(width, height, energyLevel, assets) {
     mat4.translate(MHud, MHud, jaugeCenter)
     mat4.rotateZ(MHud, MHud, - c * 2 * Math.PI / maxEnergyLevel)
 
-    drawModel(assets.energyModel, MHud, VOrtho, POrtho)
+    drawModel(assets.energyModel, MHud, VOrtho, POrtho, shader)
   }  
 
   // Draw torch icons
@@ -288,23 +319,8 @@ function drawHUD(width, height, energyLevel, assets) {
     var iconPos = vec3.fromValues(250 + c*80, height - 100, 0)
     MHud = mat4.create()
     mat4.translate(MHud, MHud, iconPos)
-    drawModel(assets.torchIcon, MHud, VOrtho, POrtho)
+    drawModel(assets.torchIcon, MHud, VOrtho, POrtho, shader)
   }
-}
-
-function drawModel(model, MMatrix, VMatrix, PMatrix) {
-  var MVMatrix = mat4.create()
-  mat4.multiply(MVMatrix, MMatrix, VMatrix)
-  var normalMatrix = computeNormalMatrix(MVMatrix)
-  
-  model.geom.bind(shader)
-  shader.uniforms.proj = PMatrix
-  shader.uniforms.view = VMatrix
-  shader.uniforms.normalMatrix = normalMatrix
-
-  shader.uniforms.model = MMatrix
-  model.draw(shader)
-  model.geom.unbind()
 }
 
 function updateCamera(camera, player, coef) {

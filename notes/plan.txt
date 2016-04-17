@@ -7,8 +7,8 @@ Plan :
  * [Fait, 12h15] jauge énergie (ortho)
  * [Fait, 15h00] coder comportements basiques énergie
  * [Fait, 16h50] ajouter jauge "torches" et code associé
+ * [Fait, 19h30] écrire moteur de particules basique
  * ajouter ennemis (placeholders + IA basique)
- * écrire moteur de particules basique pour joueur
  * modéliser ressources, éléments de décors et ennemis
  * Son, écran de chargement
  * Polish gameplay

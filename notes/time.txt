@@ -22,3 +22,6 @@ Dimanche (17/04/2016)
 13h20 Code modularisé (index.js plus facile à suivre)
 15h00 Règles en rapport avec ressources et énergie implémentées
 16h15 Fin de pause
+16h50 Jauge torche, code associé
+19h00 Pause 15mn
+19h30 Système de particules "feu" basique
