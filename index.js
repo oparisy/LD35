@@ -51,6 +51,8 @@ var woodpileP = loader.loadObj('./assets/woodpile.obj', './assets/woodpile.mtl')
 var sceneP = loader.loadText('./assets/scene.json', {'responseType': 'json'})
 Q.all([ torchP, woodpileP, sceneP ]).spread(parseScene)
 
+var energyP = loader.loadObj('./assets/energy.obj', './assets/energy.mtl').then(toModel).then(energyLoaded)
+
 // Setup loaded models, position them at the origin at first
 var models
 var player
@@ -98,6 +100,12 @@ function parseScene (torch, woodpile, sceneText) {
   console.log('sceneEntities', sceneEntities)
 }
 
+var energyModel
+function energyLoaded (model) {
+  energyModel = model
+  model.setup(model.geom.data.rawVertices)
+}
+
 // Build a flat shader
 var shader = glShader(gl,
   glslify('./shaders/flat.vert'),
@@ -109,9 +117,11 @@ camera.position = [-10, 50, 50]
 camera.up = [0, 1, 0]
 var PMatrix = mat4.create()
 
+var energyLevel = 3 // At most 16
+var waitForUnpress = false
+
 // Main loop
 var lastDate = Date.now();
-var up = 0
 function render () {
   // Compute the time elasped since last render (in ms)
   var now = Date.now();
@@ -158,9 +168,14 @@ function render () {
   }
   swapPressed |= keyPressed("<space>");
   
-  if (swapPressed) {
+  if (swapPressed && !waitForUnpress) {
     // Debugging purpose
-    up+=0.1
+    energyLevel++
+    waitForUnpress = true
+  }
+  
+  if (!swapPressed) {
+    waitForUnpress = false
   }
 
   // Move player; its (x,y) coordinate are on the ground plane
@@ -171,7 +186,7 @@ function render () {
   }
 
   // Always compute player position matrix (easier to debug this way)
-  mat4.translate(player.model, mat4.create(), vec3.fromValues(player.x, up, player.y))
+  mat4.translate(player.model, mat4.create(), vec3.fromValues(player.x, 0, player.y))
 
   // Track player with camera
   camera.target = [player.x, 0, player.y]
@@ -205,18 +220,40 @@ function render () {
   for (var i=0; i<models.length; i++) {
     var model = models[i]
     var MMatrix = model.model
-    drawModel(model, MMatrix,VMatrix)
+    drawModel(model, MMatrix, VMatrix, PMatrix)
   }
 
   if (sceneEntities) {
     for (var j=0; j<sceneEntities.length; j++) {
       var entity = sceneEntities[j]
-      drawModel(entity.model, entity.matrix, VMatrix)
+      drawModel(entity.model, entity.matrix, VMatrix, PMatrix)
+    }
+  }
+
+  if (energyModel) {
+    // Change to an ortho matrix to draw HUD
+    // Arguments are: ortho(out:mat4, left:number, right:number, bottom:number, top:number, near:number, far:number)
+    // See http://stackoverflow.com/a/6091781/38096
+    var POrtho = mat4.create()
+    mat4.ortho(POrtho, 0, width, 0, height, -1000, 1000)
+    // TODO This would be easier but shading and orientation issues    
+    // mat4.ortho(POrtho, 0, width, height, 0, -1000, 1000)
+
+    var VOrtho = mat4.create()
+
+    var jaugeCenter = vec3.fromValues(100, height - 100, 0)
+
+    for (var c=0; c<energyLevel; c++) {
+      var MHud = mat4.create()
+      mat4.translate(MHud, MHud, jaugeCenter)
+      mat4.rotateZ(MHud, MHud, - c * 2 * Math.PI / 16)
+
+      drawModel(energyModel, MHud, VOrtho, POrtho)
     }
   }
 }
 
-function drawModel(model, MMatrix, VMatrix) {
+function drawModel(model, MMatrix, VMatrix, PMatrix) {
   var MVMatrix = mat4.create()
   mat4.multiply(MVMatrix, MMatrix, VMatrix)
   var normalMatrix = computeNormalMatrix(MVMatrix)

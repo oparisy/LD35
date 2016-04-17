@@ -34,3 +34,10 @@ Seule manière simple d'exploiter le résultat de dumpscene.py : "Copy to Clipboar
 Je ne sais pas comment obtenir les rotations en quaternion => exportation en euler XYZ
 
 J'ai réécrit l'exportation en JSON, depuis un bloc de texte Blender, pour ne pas avoir à faire un parser
+
+Beaucoup de mal avec glOrtho et HUD... Pour simplifier le debugging de la jauge :
+ * extrudée pour voir quelque chose si elle est mal orientée
+ * de taille raisonnable par défaut si exprimée en pixels (64)
+ * rotation le long de X afin qu'elle soit dans le plan Y/Z (prise en compte de l'exportation wavefront "Y is up" par défaut de Blender)
+ * near et far généreux au niveau de glOrtho
+ * Shader "full white" de debugging

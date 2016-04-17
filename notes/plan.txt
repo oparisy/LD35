@@ -4,10 +4,11 @@ Plan :
  * [Fait, 22h40] créer placeholders pour principaux éléments de gameplay (ressources, torches)
  * [Fait, 23h50] faire scène minimale avec instances placeholder, exporter positions (script python vers console, basique)
  * [Fait, 10h30] charger scène
- * coder comportements basiques
+ * [Fait, 12h15] jauge énergie (ortho)
+ * coder comportements basiques énergie
+ * ajouter jauge "torches" et code associé
  * ajouter ennemis (placeholders + IA basique)
  * écrire moteur de particules basique pour joueur
- * ajouter jauges
  * modéliser ressources, éléments de décors et ennemis
  * Son, écran de chargement
  * Polish gameplay
