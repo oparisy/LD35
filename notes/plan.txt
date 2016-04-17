@@ -8,10 +8,12 @@ Plan :
  * [Fait, 15h00] coder comportements basiques énergie
  * [Fait, 16h50] ajouter jauge "torches" et code associé
  * [Fait, 19h30] écrire moteur de particules basique
- * ajouter ennemis (placeholders + IA basique)
- * modéliser ressources, éléments de décors et ennemis
- * Son, écran de chargement
- * Polish gameplay
+ * [Fait, 23h00] ajouter ennemis (système de particules + IA basique)
+ * Remplacer joueur par deux systèmes de particules (suivant son état)
+ * [Objectif : 00h] Conditions de victoire et échec
+ * Polish gameplay (débug)
+ * Polish ressources
+ * Ecran de chargement
 
 Bugs :
  * Prévoir un déplacement du joueur fonction de la caméra, ou de mieux la placer, sinon soucis si déplacements lointains
@@ -20,4 +22,14 @@ Bugs :
    (tester avec scene.json écrit à la main)
  * le backface culling pose problème avec les torches, je dois remettre des faces
  * l'allumage de la première torche respecte le délai, celui des suivantes est instantané ?
+ * La fumée ne disparaît pas si on prend du bois déjà enflammé
+ * Supprimer le "cheat code"
+ * Parfois le bois donne trop d'énergie ? Mode de reproduction ?
+ * Quand on est repassé "automatiquement" en mode eau on peut parfois
  
+Renoncés :
+ * Eclairage dynamique (au centre des émetteurs de particules)
+ * Pouvoir détruire les ennemis
+ * Musique
+ * Sons (FX)
+ * Points dans rules.txt

@@ -20,7 +20,8 @@ var tools = require('./lib/tools.js')
 var vec3FromArray = tools.vec3FromArray
 var getInput = require('./lib/input.js').getInput
 var drawModel = require('./lib/model.js').draw
-var buildFireEngine = require('./lib/fire.js')
+var buildEmitter = require('./lib/emitter.js')
+var Enemy = require('./lib/enemy.js')
 
 // Commonly used
 var i
@@ -59,6 +60,8 @@ var minTorchDistance = 3
 var torchFiringDelay = 2000
 var woodpileEnergy = 3
 var maxEnergyLevel = 16
+var nbEnemies = 6
+var playerSpeed = 20
 
 // Game and player states
 var energyLevel = initialEnergy // At most maxEnergyLevel
@@ -68,6 +71,9 @@ var lastFireEnergyConsumption
 var inProgressTorches = {}
 var lightTorches = 0
 var particleEngines = []
+var enemies = spawnEnemies()
+var gameover = false
+var victory = false
 
 // Main loop
 var lastDate = Date.now()
@@ -170,8 +176,13 @@ function render () {
   // Move player; its (x,y) coordinate are on the ground plane
   // Note that in world space, Y is up
   if (input.padx || input.pady) {
-    player.x += 15*input.padx/(100*coef)
-    player.y += 15*input.pady/(100*coef)
+    player.x += playerSpeed*input.padx/(100*coef)
+    player.y += playerSpeed*input.pady/(100*coef)
+  }
+  
+  // Update enemies behavior and position
+  for (i=0; i<enemies.length; i++) {
+    enemies[i].step(step, player, state)
   }
   
   // Update particles emitters
@@ -226,6 +237,58 @@ function render () {
   if (assets.energyModel && assets.torchIcon) {
     drawHUD(width, height, energyLevel, assets)
   }
+
+  // Tested last to ensure everything is drawn in its latest state (HUD...) 
+  if (energyLevel <= 0) {
+    gameover = true
+  }
+
+  if (lightTorches >= sceneEntities.numTorches) {
+    victory = true
+  }
+}
+
+function spawnEnemies() {
+  var result = []
+  for (i=0; i<nbEnemies; i++) {
+    var spawnAngle = 2*Math.PI*Math.random()
+    var spawnPosition = [30*Math.cos(spawnAngle), 0.5, 30*Math.sin(spawnAngle)]
+    var emitteropt = {
+        emitterPos: spawnPosition,
+        emitterRadius: 1,
+        emissionDelay: 20,
+        minttl: 300,
+        minSpeed: 0.1,
+        fizzleScale: true,
+        scale: [4, 4, 4]
+    }
+    var emitter = buildEmitter(gl, emitteropt)
+    particleEngines.push(emitter)
+    
+    var enemyopt = {
+      initPos: spawnPosition,
+      speed: 0.2,
+      rotSpeed: 0.01,
+      minAggroDistance: 30,
+      maxAggroDistance: 40,
+      minAngleBeforeDirectionChange: Math.PI / 10,
+      maxDistanceBeforeCentering: 150,
+      kind: 'Follower',
+      hitRadius: 1.2,
+      hitInterval: 500,
+      hit: hitPlayer
+    }
+    var enemy = new Enemy(enemyopt, emitter)
+    result.push(enemy)
+  }
+
+  return result
+}
+
+function hitPlayer() {
+  if (!gameover && !victory) {
+    energyLevel--
+  }
 }
 
 function hideResource(entity) {
@@ -239,18 +302,28 @@ function setOnFire(entity) {
   
   entity.onFire = true
   
-  // TODO Another con
+  // TODO Another basis convention...
   var pos = [entity.matrix[12], entity.matrix[13], entity.matrix[14]]
+  
+  var fireopt = {
+      emitterPos: pos,
+      emitterRadius: 1,
+      emissionDelay: 20,
+      minttl: 300,
+      minSpeed: 0.1,
+      fizzleScale: true,
+      scale: [4, 4, 4]
+  }
 
   switch (entity.kind) {
     case 'Torch':
       lightTorches++
       pos[1] += 3
-      particleEngines.push(buildFireEngine(gl, pos, 1))
+      particleEngines.push(buildEmitter(gl, fireopt))
       break;
     case 'Woodpile':
       pos[1] += 1
-      particleEngines.push(buildFireEngine(gl, pos, 1))
+      particleEngines.push(buildEmitter(gl, fireopt))
   }
 
   console.log(entity.kind + ' set on fire, new emitter at ' + pos)

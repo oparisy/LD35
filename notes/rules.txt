@@ -8,14 +8,14 @@
  * [Fait] l'état "feu" enflamme une torche si l'on est suffisamment proche, et après un délai
 
  * condition de fin de niveau : enflammer des objectifs (torches / monuments) façon counter strike
-
  * des ennemis avec aggro
- * Peuvent être enflammés
  * La jauge d'énergie peut descendre en mode eau si contact avec ennemis
  * La jauge d'énergie représente la "vie" => game over si à 0
- * les ennemis sont détruits si enflammés (il faut être en mode feu et les toucher, ou avoir enflammé du combustible à proximité)
- * les ennemis sont plus proches (attirés ?) des objectifs, leur aggro augmente si on s'en approche ?
- * ennemis enflammables => papier ? bois ?
 
+Renoncé :
+ * les ennemis sont plus proches (attirés ?) des objectifs, leur aggro augmente si on s'en approche ?
+ * Ennemis peuvent être enflammés
+ * les ennemis sont détruits si enflammés (il faut être en mode feu et les toucher, ou avoir enflammé du combustible à proximité)
+ * ennemis enflammables => papier ? bois ?
  * certains objets explosifs ? (baril)
  * certains combustibles peuvent être des éléments de décor inamovibles (arbres)

@@ -21,7 +21,11 @@ Dimanche (17/04/2016)
 12h45 Reprise après pause
 13h20 Code modularisé (index.js plus facile à suivre)
 15h00 Règles en rapport avec ressources et énergie implémentées
-16h15 Fin de pause
+16h15 Fin de pause (sieste)
 16h50 Jauge torche, code associé
 19h00 Pause 15mn
-19h30 Système de particules "feu" basique
+19h45 Système de particules "feu" basique, réorganisation objectifs
+20h00 Fin pause (15mn)
+21h30 Paramétrisation émetteur particules + premiers éléments ennemi
+21h30 Pause repas (30mn)
+23h00 Ennemis sympas (réagissent au joueur et à son état, deux modes)
