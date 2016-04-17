@@ -1,6 +1,15 @@
 # This script export visible elements positions, scale and rotation in an easy to parse format
-# Cut and paste it in Blender console view
+# Run this from a text block
 import bpy
+import os
+
+filename = os.path.abspath(os.path.join(os.path.dirname(bpy.data.filepath), "scene.json"))
+print("Writing to: %s" % filename)
+text_file = open(filename, "w")
+
+text_file.write("""{ "entities": [\n""")
+
+first = True # Used to avoid final comma
 
 scene = bpy.context.scene
 for element in bpy.context.scene.objects:
@@ -14,4 +23,12 @@ for element in bpy.context.scene.objects:
     if (rm != 'XYZ'): raise Exception('Unhandled rotation mode')
     q = element.rotation_quaternion
     eu = element.rotation_euler
-    print("model='%s' pos=(%f, %f, %f) scale=(%f, %f, %f) rotation_mode=%s rot=(%f, %f, %f)" % (element.data.name, loc[0], loc[1], loc[2], s[0], s[1], s[2], rm, eu[0], eu[1], eu[2]))
+
+    if not first:
+        text_file.write(",\n")
+    first = False    
+    text_file.write("""{ "model": "%s", "pos": [%f, %f, %f], "scale": [%f, %f, %f], "rotation_mode": "%s", "eurot": [%f, %f, %f] }""" % (element.data.name, loc[0], loc[1], loc[2], s[0], s[1], s[2], rm, eu[0], eu[1], eu[2]))
+
+text_file.write("\n]}\n")
+
+text_file.close()

@@ -40,11 +40,16 @@ gl.enable(gl.DEPTH_TEST)
 // see zNear comment below
 gl.enable(gl.CULL_FACE)
 
-// Load models(a "P" is a promise)
+// Load models and assets (a "P" is a promise)
 var toModel = model.toModel(gl)
 var arenaP = loader.loadObj('./assets/arena.obj', './assets/arena.mtl').then(toModel)
 var playerP = loader.loadObj('./assets/player.obj', './assets/player.mtl').then(toModel)
-var modelsP = Q.all([ arenaP, playerP ]).then(allLoaded).done()
+var modelsP = Q.all([ arenaP, playerP ]).then(allLoaded)
+
+var torchP = loader.loadObj('./assets/torch.obj', './assets/torch.mtl').then(toModel)
+var woodpileP = loader.loadObj('./assets/woodpile.obj', './assets/woodpile.mtl').then(toModel)
+var sceneP = loader.loadText('./assets/scene.json', {'responseType': 'json'})
+Q.all([ torchP, woodpileP, sceneP ]).spread(parseScene)
 
 // Setup loaded models, position them at the origin at first
 var models
@@ -53,11 +58,44 @@ function allLoaded(loaded) {
   models = loaded
   for (var i=0; i<models.length; i++) {
     var model = models[i]
-    model.setup(model.geom.data.rawVertices);
+    model.setup(model.geom.data.rawVertices)
     model.model = mat4.create()
   }
   player = models[1]
   player.x = player.y = 0
+}
+
+// Create geometrical entities from scene and loaded entities
+var sceneEntities = []
+function parseScene (torch, woodpile, sceneText) {
+  
+  // TODO This boilerplate code should not be needed
+  torch.setup(torch.geom.data.rawVertices)
+  woodpile.setup(woodpile.geom.data.rawVertices)
+  
+  var modelsDict = {'Torch': torch, 'Woodpile': woodpile}
+
+  // TODO Why isn't {'responseType': 'json'} enough?
+  var scene = JSON.parse(sceneText)
+  for (var i=0; i<scene.entities.length; i++) {
+    var entity = scene.entities[i]
+    var model = modelsDict[entity.model]
+    if (!model) {
+      console.log('Ignored scene entity "' + entity.model + '"')
+      continue
+    }
+    
+    // TODO Consider using the same world space as Blender (see wavefront export options)
+    var modelMat = mat4.create()
+    mat4.translate(modelMat, modelMat, vec3.fromValues(entity.pos[0], entity.pos[2], entity.pos[1]))
+    mat4.rotateX(modelMat, modelMat, entity.eurot[0])
+    mat4.rotateY(modelMat, modelMat, entity.eurot[1])
+    mat4.rotateZ(modelMat, modelMat, entity.eurot[2])
+
+    sceneEntities.push({'model': model, 'matrix': modelMat})
+  }
+  
+  console.log('sceneEntities', sceneEntities)
 }
 
 // Build a flat shader
@@ -167,20 +205,30 @@ function render () {
   for (var i=0; i<models.length; i++) {
     var model = models[i]
     var MMatrix = model.model
-
-    var MVMatrix = mat4.create()
-    mat4.multiply(MVMatrix, MMatrix, VMatrix)
-    var normalMatrix = computeNormalMatrix(MVMatrix)
-    
-    model.geom.bind(shader);
-    shader.uniforms.proj = PMatrix;
-    shader.uniforms.view = VMatrix;
-    shader.uniforms.normalMatrix = normalMatrix;
-    
-    shader.uniforms.model = MMatrix;
-    model.draw(shader);
-    model.geom.unbind();
+    drawModel(model, MMatrix,VMatrix)
   }
+
+  if (sceneEntities) {
+    for (var j=0; j<sceneEntities.length; j++) {
+      var entity = sceneEntities[j]
+      drawModel(entity.model, entity.matrix, VMatrix)
+    }
+  }
+}
+
+function drawModel(model, MMatrix, VMatrix) {
+  var MVMatrix = mat4.create()
+  mat4.multiply(MVMatrix, MMatrix, VMatrix)
+  var normalMatrix = computeNormalMatrix(MVMatrix)
+  
+  model.geom.bind(shader)
+  shader.uniforms.proj = PMatrix
+  shader.uniforms.view = VMatrix
+  shader.uniforms.normalMatrix = normalMatrix
+
+  shader.uniforms.model = MMatrix
+  model.draw(shader)
+  model.geom.unbind()
 }
 
 /** Calculates a 3x3 normal matrix (transpose inverse) from the 4x4 matrix */

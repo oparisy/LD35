@@ -32,3 +32,5 @@ Par principe j'ai appliqué (Ctrl + A) toutes les transformations aux meshes avan
 
 Seule manière simple d'exploiter le résultat de dumpscene.py : "Copy to Clipboard (as script)", puis enlever préfixes...
 Je ne sais pas comment obtenir les rotations en quaternion => exportation en euler XYZ
+
+J'ai réécrit l'exportation en JSON, depuis un bloc de texte Blender, pour ne pas avoir à faire un parser
