@@ -1,16 +1,21 @@
  * [Fait] environnement "arène" fermé : murs ou tore ou globe (avec caméra proche pour une impression de surface non bornée)
+ * [Fait] utiliser les boutons "rouge" et "bleu" (2 & 3) du pad (ou "W" et "F") pour changer d'état
+ * [Fait] en mode "feu", la jauge descend lentement ; en mode "eau", la jauge est fixée
+ * [Fait] on ne peut pas mourir d'être resté en mode feu : sous une certaine énergie, on repasse en mode "eau"
+ * [Fait] il faut avoir rempli une jauge d'énergie pour être en mode feu
+ * [Fait] l'état "eau" permet de collecter du combustible (le combustible est une ressource à collecter en passant à proximité)
+ * [Fait] l'état "feu" enflamme le combustible sans remplir la jauge
+ * [Fait] l'état "feu" enflamme une torche si l'on est suffisamment proche, et après un délai
+
+ * condition de fin de niveau : enflammer des objectifs (torches / monuments) façon counter strike
+
  * des ennemis avec aggro
  * Peuvent être enflammés
- * il faut avoir rempli une jauge d'énergie pour être en mode feu ; c'est aussi la "vie"
- * l'état "eau" permet de collecter du combustible ; l'état "feu" l'enflamme sans remplir la jauge
- * en mode "feu", la jauge descend lentement
- * en mode "eau", la jauge est fixée (mais peut encore descendre si contact avec ennemis)
+ * La jauge d'énergie peut descendre en mode eau si contact avec ennemis
+ * La jauge d'énergie représente la "vie" => game over si à 0
  * les ennemis sont détruits si enflammés (il faut être en mode feu et les toucher, ou avoir enflammé du combustible à proximité)
- * certains objets explosifs ? (baril)
- * certains combustibles peuvent être des éléments de décor inamovibles (arbres)
- * condition de fin de niveau : enflammer des objectifs (torches / monuments) façon counter strike
  * les ennemis sont plus proches (attirés ?) des objectifs, leur aggro augmente si on s'en approche ?
  * ennemis enflammables => papier ? bois ?
- * utiliser les boutons "rouge" et "bleu" du pad pour changer d'état
- * on ne peut pas mourir d'être resté en mode feu : sous une certaine énergie, on repasse en mode "eau"
- * le combustible est une ressource à collecter en passant à proximité
+
+ * certains objets explosifs ? (baril)
+ * certains combustibles peuvent être des éléments de décor inamovibles (arbres)

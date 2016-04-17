@@ -5,7 +5,7 @@ Plan :
  * [Fait, 23h50] faire scène minimale avec instances placeholder, exporter positions (script python vers console, basique)
  * [Fait, 10h30] charger scène
  * [Fait, 12h15] jauge énergie (ortho)
- * coder comportements basiques énergie
+ * [Fait, 15h00] coder comportements basiques énergie
  * ajouter jauge "torches" et code associé
  * ajouter ennemis (placeholders + IA basique)
  * écrire moteur de particules basique pour joueur

@@ -47,13 +47,26 @@ camera.position = [-10, 50, 50]
 camera.up = [0, 1, 0]
 var PMatrix = mat4.create()
 
+// Game constants
+var initialEnergy = 3
+var minFireEnergy = 4
+var fireConsumptionMilli = 1500
+var minResourceDist = 1.5
+var minTorchDistance = 3
+var torchFiringDelay = 2000
+var woodpileEnergy = 3
+var maxEnergyLevel = 16
+
 // Game and player states
-var energyLevel = 3 // At most 16
+var energyLevel = initialEnergy // At most maxEnergyLevel
 var waitForUnpress = false
 var state = 'water'
+var lastFireEnergyConsumption
+var inProgressTorches = {}
 
 // Main loop
-var lastDate = Date.now();
+var i
+var lastDate = Date.now()
 function render () {
   // Compute the time elasped since last render (in ms)
   var now = Date.now();
@@ -87,6 +100,69 @@ function render () {
     waitForUnpress = false
   }
 
+  if (input.toFire && state == 'water' && energyLevel >= minFireEnergy) {
+    switchToFireState()
+    lastFireEnergyConsumption = now
+  }
+  
+  if (input.toWater && state == 'fire') {
+      switchToWaterState()
+  }
+  
+  // Regularly decrease energy when in fire mode
+  if (state == 'fire' && (now - lastFireEnergyConsumption) > fireConsumptionMilli) {
+    lastFireEnergyConsumption = now
+    
+    // Player cannot die of too low energy; just switch back to water
+    if (energyLevel < minFireEnergy) {
+      switchToWaterState()
+    } else {
+      energyLevel--
+    }
+  }
+  
+  // Interact with nearby wood piles
+  var localWoods = findNear(assets.sceneEntities, 'Woodpile', minResourceDist, player.x, player.y)
+  for (i=0; i<localWoods.length; i++) {
+    if (state == 'water') {
+      energyLevel = Math.min(energyLevel + woodpileEnergy, maxEnergyLevel)
+      hideResource(localWoods[i])
+    } else {
+      setOnFire(localWoods[i])
+    }
+  }
+
+  // Interact with nearby torches
+  var toReset = []
+  for (i=0; i<assets.sceneEntities; i++) {
+    if (assets.sceneEntities[i].kind == 'Torch') {
+      toReset[assets.sceneEntities[i]] = true
+    }
+  }
+  var localTorches = findNear(assets.sceneEntities, 'Torch', minTorchDistance, player.x, player.y)
+  for (i=0; i<localTorches.length; i++) {
+    if (state == 'fire') {
+      var torch = localTorches[i]
+      toReset[torch] = false
+      var firstContact = inProgressTorches[torch]
+      if (firstContact) {
+        // Have we been near this torch for long enough?
+        if ((now - firstContact) >= torchFiringDelay) {
+          setOnFire(torch)
+        }
+      } else {
+        inProgressTorches[torch] = now
+      }
+    }
+  }
+  
+  // Reset torches from which we have moved away
+  for (i=0; i<assets.sceneEntities; i++) {
+    if (toReset[assets.sceneEntities[i]]) {
+      inProgressTorches[assets.sceneEntities[i]] = undefined
+    }
+  }
+
   // Move player; its (x,y) coordinate are on the ground plane
   // Note that in world space, Y is up 
   if (input.padx || input.pady) {
@@ -96,6 +172,12 @@ function render () {
 
   // Always compute player position matrix (easier to debug this way)
   mat4.translate(player.model, mat4.create(), vec3.fromValues(player.x, 0, player.y))
+  
+  // Temporary: visualize player state
+  if (state == 'water') {
+    // Darker since normals matrix have not been recomputed?
+    mat4.rotateY(player.model, player.model, Math.PI)
+  }
 
   // Track player with camera
   updateCamera(camera, player, coef)
@@ -108,7 +190,7 @@ function render () {
   mat4.perspective(PMatrix, Math.PI / 4, width / height, 0.1, 1000)
 
   // Draw player and ground
-  for (var i=0; i<assets.models.length; i++) {
+  for (i=0; i<assets.models.length; i++) {
     var model = assets.models[i]
     var MMatrix = model.model
     drawModel(model, MMatrix, VMatrix, PMatrix)
@@ -119,6 +201,9 @@ function render () {
   if (sceneEntities) {
     for (var j=0; j<sceneEntities.length; j++) {
       var entity = sceneEntities[j]
+      if (entity.hidden) {
+        continue
+      }
       drawModel(entity.model, entity.matrix, VMatrix, PMatrix)
     }
   }
@@ -126,6 +211,49 @@ function render () {
   if (assets.energyModel) {
     drawHUD(width, height, energyLevel, assets)
   }
+}
+
+function hideResource(entity) {
+  entity.hidden = true
+}
+
+function setOnFire(entity) {
+  if (entity.onFire) {
+    return
+  }
+  
+  entity.onFire = true
+  console.log(entity.kind + ' set on fire')
+}
+
+function switchToFireState() {
+  state = 'fire'
+}
+
+function switchToWaterState() {
+  state = 'water'
+}
+
+/** Brute force "nearest assets" search */
+function findNear(sceneEntities, kind, minDistance, x, y) {
+  var result = []
+  for (var i=0; i<sceneEntities.length; i++) {
+    var entity = sceneEntities[i]
+    if (entity.kind != kind) {
+      continue
+    }
+    
+    var modelMat = entity.matrix
+    var modelPos = vec3.fromValues(modelMat[12], modelMat[14], modelMat[13]) // TODO Those different spaces are a pain
+    var playerPos = vec3.fromValues(x, y, 0)
+    var modelToPlayer = vec3.create()
+    vec3.subtract(modelToPlayer, playerPos, modelPos)
+    var distance = vec3.length(modelToPlayer)
+    if (distance <= minDistance) {
+      result.push(entity)
+    }
+  }
+  return result
 }
 
 function drawHUD(width, height, energyLevel, assets) {
@@ -144,7 +272,7 @@ function drawHUD(width, height, energyLevel, assets) {
   for (var c=0; c<energyLevel; c++) {
     var MHud = mat4.create()
     mat4.translate(MHud, MHud, jaugeCenter)
-    mat4.rotateZ(MHud, MHud, - c * 2 * Math.PI / 16)
+    mat4.rotateZ(MHud, MHud, - c * 2 * Math.PI / maxEnergyLevel)
 
     drawModel(assets.energyModel, MHud, VOrtho, POrtho)
   }  
@@ -254,7 +382,7 @@ function loadAssets (gl) {
       mat4.rotateY(modelMat, modelMat, entity.eurot[1])
       mat4.rotateZ(modelMat, modelMat, entity.eurot[2])
 
-      sceneEntities.push({'model': model, 'matrix': modelMat})
+      sceneEntities.push({'model': model, 'kind': entity.model, 'matrix': modelMat})
     }
     
     result.sceneEntities = sceneEntities
@@ -282,12 +410,16 @@ var GPControls = require('gp-controls')
 var gamepad = GPControls({
     '<axis-left-x>': 'x',
   '<axis-left-y>': 'y',
-  '<action 1>': 'swap'
+  '<action 1>': 'swap',
+  '<action 2>': 'toFire',
+  '<action 3>': 'toWater'
 })
 var keyPressed = require('key-pressed')
 
 function getInput () {
   var swapPressed = false;
+  var toFire = false;
+  var toWater = false;
   var padx = 0, pady = 0;
 
   // Gamepad
@@ -296,6 +428,8 @@ function getInput () {
     padx = Math.abs(gamepad.inputs.x) < 0.25 ? 0 : gamepad.inputs.x;
     pady = Math.abs(gamepad.inputs.y) < 0.25 ? 0 : gamepad.inputs.y;
     swapPressed = gamepad.inputs.swap.pressed;
+    toFire = gamepad.inputs.toFire.pressed;
+    toWater = gamepad.inputs.toWater.pressed;
   }
 
   // Keyboard
@@ -312,8 +446,10 @@ function getInput () {
     pady = +1;
   }
   swapPressed |= keyPressed("<space>");
-  
-  return { padx: padx, pady: pady, action1: swapPressed }
+  toWater |= keyPressed("W");
+  toFire |= keyPressed("F");
+
+  return { padx: padx, pady: pady, action1: swapPressed, toFire: toFire, toWater: toWater }
 }
 
 module.exports = {

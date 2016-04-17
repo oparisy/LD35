@@ -20,3 +20,4 @@ Dimanche (17/04/2016)
 12h15 Jauge énergie ortho affichée
 12h45 Reprise après pause
 13h20 Code modularisé (index.js plus facile à suivre)
+15h00 Règles en rapport avec ressources et énergie implémentées
