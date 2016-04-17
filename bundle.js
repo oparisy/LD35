@@ -46,6 +46,10 @@ var shader = glShader(gl,
   "precision mediump float;\n#define GLSLIFY 1\r\n\r\nattribute vec3 position;\r\nattribute vec3 normal;\r\n\r\nuniform mat3 normalMatrix;\r\nuniform mat4 proj;\r\nuniform mat4 view;\r\nuniform mat4 model;\r\n\r\nuniform vec3 color;\r\n\r\nvarying vec3 v_normal;\r\n\r\nvoid main() {\r\n  gl_Position = (\r\n    proj *\r\n    view *\r\n\tmodel *\r\n    vec4(position, 1.0)\r\n  );\r\n  v_normal = (normalMatrix * normal).xyz;\r\n}\r\n",
 	"precision mediump float;\n#define GLSLIFY 1\r\nuniform vec3 v_color;\r\nvarying vec3 v_normal;\r\n\r\nvoid main() {\r\n\r\n\tvec3 normal = normalize(v_normal);\r\n\tvec4 color = vec4(0., 0., 0., 0.);\r\n\tvec4 diffuse = vec4(0., 0., 0., 1.);\r\n\tdiffuse.rgb = v_color.rgb;\r\n\tdiffuse.xyz *= max(dot(normal,vec3(0.,0.,1.)), 0.);\r\n\tcolor.xyz += diffuse.xyz;\r\n\tcolor = vec4(color.rgb, 1.0);\r\n\tgl_FragColor = color;\r\n\r\n  //gl_FragColor = vec4(color, 1.0);\r\n}\r\n")
 
+var unlitShader = glShader(gl,
+  "precision mediump float;\n#define GLSLIFY 1\r\n\r\nattribute vec3 position;\r\nattribute vec3 normal;\r\n\r\nuniform mat3 normalMatrix;\r\nuniform mat4 proj;\r\nuniform mat4 view;\r\nuniform mat4 model;\r\n\r\nuniform vec3 color;\r\n\r\nvarying vec3 v_normal;\r\n\r\nvoid main() {\r\n  gl_Position = (\r\n    proj *\r\n    view *\r\n\tmodel *\r\n    vec4(position, 1.0)\r\n  );\r\n  v_normal = (normalMatrix * normal).xyz;\r\n}\r\n",
+  "precision mediump float;\n#define GLSLIFY 1\r\nuniform vec3 v_color;\r\nvarying vec3 v_normal;\r\n\r\nvoid main() {\r\n  gl_FragColor = vec4(v_color, 1.0);\r\n}\r\n")
+
 // Projection and camera setup
 var camera = require('lookat-camera')()
 camera.position = [-10, 50, 50]
@@ -214,7 +218,7 @@ function render () {
   for (i=0; i<assets.models.length; i++) {
     var model = assets.models[i]
     var MMatrix = model.model
-    drawModel(model, MMatrix, VMatrix, PMatrix, shader)
+    drawModel(model, MMatrix, VMatrix, PMatrix, model.isGround ? unlitShader : shader)
   }
 
   // Draw assets (wood, torch)
@@ -471,6 +475,8 @@ function loadAssets (gl) {
     }
     result.player = result.models[1]
     result.player.x = result.player.y = 0
+    
+    result.model[0].isGround = true
   }
 
   // Create geometrical entities from scene and loaded entities

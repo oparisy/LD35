@@ -30,3 +30,5 @@ Dimanche (17/04/2016)
 21h30 Pause repas (30mn)
 23h00 Ennemis sympas (réagissent au joueur et à son état, deux modes)
 00h15 Conditions de victoire et de game over, avec pictos animés ; toutes règles ciblées implémentées
+00h15 Pause (15mn)
+01h00 Amélioration rendu arène (mais : il y a un bug/délais de rechargement des mtl)

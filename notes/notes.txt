@@ -41,3 +41,5 @@ Beaucoup de mal avec glOrtho et HUD... Pour simplifier le debugging de la jauge 
  * rotation le long de X afin qu'elle soit dans le plan Y/Z (prise en compte de l'exportation wavefront "Y is up" par défaut de Blender)
  * near et far généreux au niveau de glOrtho
  * Shader "full white" de debugging
+ 
+Note : les MTL semblent cachés longuement : chargement pas visible dans logs budo, difficile de les màj

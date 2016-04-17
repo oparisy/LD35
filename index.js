@@ -45,6 +45,10 @@ var shader = glShader(gl,
   glslify('./shaders/flat.vert'),
 	glslify('./shaders/flat.frag'))
 
+var unlitShader = glShader(gl,
+  glslify('./shaders/flat.vert'),
+  glslify('./shaders/unlit.frag'))
+
 // Projection and camera setup
 var camera = require('lookat-camera')()
 camera.position = [-10, 50, 50]
@@ -213,7 +217,7 @@ function render () {
   for (i=0; i<assets.models.length; i++) {
     var model = assets.models[i]
     var MMatrix = model.model
-    drawModel(model, MMatrix, VMatrix, PMatrix, shader)
+    drawModel(model, MMatrix, VMatrix, PMatrix, model.isGround ? unlitShader : shader)
   }
 
   // Draw assets (wood, torch)
