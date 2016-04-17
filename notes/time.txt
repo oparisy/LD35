@@ -18,3 +18,5 @@ Dimanche (17/04/2016)
  8h30 Reprise (dormi probablement 5h)
 10h30 Scène exportée en JSON, chargée et affichée
 12h15 Jauge énergie ortho affichée
+12h45 Reprise après pause
+13h20 Code modularisé (index.js plus facile à suivre)

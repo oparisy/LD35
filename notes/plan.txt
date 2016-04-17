@@ -15,5 +15,7 @@ Plan :
 
 Bugs :
  * Prévoir un déplacement du joueur fonction de la caméra, ou de mieux la placer, sinon soucis si déplacements lointains
+   (changer position "cible" et vecteur "objectif" pour un point situé à une translation constante "derrière" le joueur)
  * position des entités de scène chargées ne correspond pas au .blend
+   (tester avec scene.json écrit à la main)
  * le backface culling pose problème avec les torches, je dois remettre des faces

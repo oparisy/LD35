@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-	"lint": "jshint index.js",
+	"lint": "jshint index.js lib",
     "prestart": "browserify index.js -o bundle.js",
     "start": "budo index.js --open -- -t glslify -t brfs"
   },
