@@ -43,3 +43,6 @@ Beaucoup de mal avec glOrtho et HUD... Pour simplifier le debugging de la jauge 
  * Shader "full white" de debugging
  
 Note : les MTL semblent cachés longuement : chargement pas visible dans logs budo, difficile de les màj
+
+J'ai résolu un problème de positionnement de la torche en en ramenant une instance à l'origine avant
+de l'exporter sous forme d'obj

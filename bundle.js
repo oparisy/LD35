@@ -360,14 +360,14 @@ function setOnFire(entity) {
       fizzleScale: true,
       scale: [4, 4, 4],
       initcolorfun: function(particle) {
-        return [0.7 + 0.3*Math.random(), 0.4 + Math.random()/4, 0]
+        return [0.8 + 0.2*Math.random(), 0.3 + 0.1*Math.random(), 0]
       }
   }
 
   switch (entity.kind) {
     case 'Torch':
       lightTorches++
-      pos[1] += 3
+      pos[1] += 8
       particleEngines.push(buildEmitter(gl, fireopt))
       break;
     case 'Woodpile':
@@ -557,9 +557,15 @@ function loadAssets (gl) {
       // TODO Consider using the same world space as Blender (see wavefront export options)
       var modelMat = mat4.create()
       mat4.translate(modelMat, modelMat, vec3.fromValues(entity.pos[0], entity.pos[2], entity.pos[1]))
+      // Force a scale, torches are too small
+      if (entity.model == 'Torch') {
+        mat4.scale(modelMat, modelMat, vec3.fromValues(3, 3, 3))
+      }
       mat4.rotateX(modelMat, modelMat, entity.eurot[0])
       mat4.rotateY(modelMat, modelMat, entity.eurot[1])
       mat4.rotateZ(modelMat, modelMat, entity.eurot[2])
+      
+
 
       sceneEntities.push({'model': model, 'kind': entity.model, 'matrix': modelMat})
     }
