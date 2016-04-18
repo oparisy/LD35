@@ -16,8 +16,6 @@ var mat3    = require('gl-mat3')
 var vec3    = require('gl-vec3')
 var quat    = require('gl-quat')
 
-var tools = require('./lib/tools.js')
-var vec3FromArray = tools.vec3FromArray
 var getInput = require('./lib/input.js').getInput
 var drawModel = require('./lib/model.js').draw
 var buildEmitter = require('./lib/emitter.js')
@@ -141,7 +139,7 @@ function render () {
   }
   
   // Interact with nearby wood piles
-  var localWoods = findNear(assets.sceneEntities, 'Woodpile', minResourceDist, player.x, player.y)
+  var localWoods = findNear(assets.sceneEntities, 'Woodpile', minResourceDist, player.pos)
   for (i=0; i<localWoods.length; i++) {
     if (state == 'water') {
       if (!localWoods[i].hidden) {
@@ -160,7 +158,7 @@ function render () {
       toReset[assets.sceneEntities[i]] = true
     }
   }
-  var localTorches = findNear(assets.sceneEntities, 'Torch', minTorchDistance, player.x, player.y)
+  var localTorches = findNear(assets.sceneEntities, 'Torch', minTorchDistance, player.pos)
   for (i=0; i<localTorches.length; i++) {
     if (state == 'fire') {
       var torch = localTorches[i]
@@ -184,11 +182,12 @@ function render () {
     }
   }
 
-  // Move player; its (x,y) coordinate are on the ground plane
-  // Note that in world space, Y is up
+  // Move player (in world space: Y is up)
   if ((input.padx || input.pady) && !(victory || gameover)) {
-    player.x += playerSpeed*input.padx/(100*coef)
-    player.y += playerSpeed*input.pady/(100*coef)
+    var dx = playerSpeed*input.padx/(100*coef)
+    var dz = playerSpeed*input.pady/(100*coef)
+    var dp = vec3.fromValues(dx, 0, dz)
+    vec3.add(player.pos, player.pos, dp)
   }
 
   // Update enemies behavior and position
@@ -202,7 +201,7 @@ function render () {
   }
 
   // Update player emitter
-  playerEmitter.updatePosition(vec3.fromValues(player.x, state == 'water' ? 5.0 : 0.5, player.y))
+  playerEmitter.updatePosition(emitterPosition(player, state))
   
   // Update particles emitters
   for (i=0; i<particleEngines.length; i++) {
@@ -210,7 +209,7 @@ function render () {
   }
 
   // Always compute player position matrix (easier to debug this way)
-  mat4.translate(player.model, mat4.create(), vec3.fromValues(player.x, 0, player.y))
+  mat4.translate(player.model, mat4.create(), player.pos)
   
   // Temporary: visualize player state
   if (state == 'water') {
@@ -271,8 +270,15 @@ function render () {
   }
 }
 
-function spawnPlayer(player) {
-  var spawnPosition = [player.x, 5.0, player.y]
+/** Compute player emitter position */
+function emitterPosition(player, state) {
+  var result = vec3.clone(player.pos)
+  result[1] = state == 'water' ? 5.0 : 0.5
+  return result
+}
+
+function spawnPlayer(player, state) {
+  var spawnPosition = emitterPosition(player, state)
   var emitteropt = {
       emitterPos: spawnPosition,
       emitterRadius: 2.0,
@@ -392,8 +398,8 @@ function switchToWaterState() {
   playerEmitter.opt.minSpeed = -0.1
 }
 
-/** Brute force "nearest assets" search */
-function findNear(sceneEntities, kind, minDistance, x, y) {
+/** Brute force "nearest assets from pos" search */
+function findNear(sceneEntities, kind, minDistance, fromPos) {
   var result = []
   for (var i=0; i<sceneEntities.length; i++) {
     var entity = sceneEntities[i]
@@ -402,13 +408,8 @@ function findNear(sceneEntities, kind, minDistance, x, y) {
     }
     
     var modelMat = entity.matrix
-    
-    // TODO Those different spaces are a pain
-    var modelPos = vec3.fromValues(modelMat[12], modelMat[14], modelMat[13])
-
-    var playerPos = vec3.fromValues(x, y, 0)
-    var modelToPlayer = vec3.create()
-    vec3.subtract(modelToPlayer, playerPos, modelPos)
+    var modelPos = vec3.fromValues(modelMat[12], modelMat[13], modelMat[14])
+    var modelToPlayer = vec3.subtract(vec3.create(), fromPos, modelPos)
     var distance = vec3.length(modelToPlayer)
     if (distance <= minDistance) {
       result.push(entity)
@@ -463,9 +464,9 @@ function drawHUD(width, height, energyLevel, assets, victory, gameover) {
 }
 
 function updateCamera(camera, player, coef) {
-  camera.target = [player.x, 0, player.y]
+  camera.target = vec3.clone(player.pos)
   var cameraToPlayer = vec3.create()
-  vec3.subtract(cameraToPlayer, vec3FromArray(camera.target), vec3FromArray(camera.position))
+  vec3.subtract(cameraToPlayer, camera.target, camera.position)
   var cameraPlayerDistance = vec3.length(cameraToPlayer)
   if (cameraPlayerDistance > 75 || cameraPlayerDistance < 60) {
     var target = cameraPlayerDistance > 75 ? 75 : 60

@@ -142,7 +142,7 @@ function render () {
   }
   
   // Interact with nearby wood piles
-  var localWoods = findNear(assets.sceneEntities, 'Woodpile', minResourceDist, player.x, player.y)
+  var localWoods = findNear(assets.sceneEntities, 'Woodpile', minResourceDist, player.pos)
   for (i=0; i<localWoods.length; i++) {
     if (state == 'water') {
       if (!localWoods[i].hidden) {
@@ -161,7 +161,7 @@ function render () {
       toReset[assets.sceneEntities[i]] = true
     }
   }
-  var localTorches = findNear(assets.sceneEntities, 'Torch', minTorchDistance, player.x, player.y)
+  var localTorches = findNear(assets.sceneEntities, 'Torch', minTorchDistance, player.pos)
   for (i=0; i<localTorches.length; i++) {
     if (state == 'fire') {
       var torch = localTorches[i]
@@ -185,11 +185,12 @@ function render () {
     }
   }
 
-  // Move player; its (x,y) coordinate are on the ground plane
-  // Note that in world space, Y is up
+  // Move player (in world space: Y is up)
   if ((input.padx || input.pady) && !(victory || gameover)) {
-    player.x += playerSpeed*input.padx/(100*coef)
-    player.y += playerSpeed*input.pady/(100*coef)
+    var dx = playerSpeed*input.padx/(100*coef)
+    var dz = playerSpeed*input.pady/(100*coef)
+    var dp = vec3.fromValues(dx, 0, dz)
+    vec3.add(player.pos, player.pos, dp)
   }
 
   // Update enemies behavior and position
@@ -203,7 +204,7 @@ function render () {
   }
 
   // Update player emitter
-  playerEmitter.updatePosition(vec3.fromValues(player.x, state == 'water' ? 5.0 : 0.5, player.y))
+  playerEmitter.updatePosition(emitterPosition(player, state))
   
   // Update particles emitters
   for (i=0; i<particleEngines.length; i++) {
@@ -211,7 +212,7 @@ function render () {
   }
 
   // Always compute player position matrix (easier to debug this way)
-  mat4.translate(player.model, mat4.create(), vec3.fromValues(player.x, 0, player.y))
+  mat4.translate(player.model, mat4.create(), player.pos)
   
   // Temporary: visualize player state
   if (state == 'water') {
@@ -272,8 +273,15 @@ function render () {
   }
 }
 
-function spawnPlayer(player) {
-  var spawnPosition = [player.x, 5.0, player.y]
+/** Compute player emitter position */
+function emitterPosition(player, state) {
+  var result = vec3.clone(player.pos)
+  result[1] = state == 'water' ? 5.0 : 0.5
+  return result
+}
+
+function spawnPlayer(player, state) {
+  var spawnPosition = emitterPosition(player, state)
   var emitteropt = {
       emitterPos: spawnPosition,
       emitterRadius: 2.0,
@@ -393,8 +401,8 @@ function switchToWaterState() {
   playerEmitter.opt.minSpeed = -0.1
 }
 
-/** Brute force "nearest assets" search */
-function findNear(sceneEntities, kind, minDistance, x, y) {
+/** Brute force "nearest assets from pos" search */
+function findNear(sceneEntities, kind, minDistance, fromPos) {
   var result = []
   for (var i=0; i<sceneEntities.length; i++) {
     var entity = sceneEntities[i]
@@ -403,13 +411,8 @@ function findNear(sceneEntities, kind, minDistance, x, y) {
     }
     
     var modelMat = entity.matrix
-    
-    // TODO Those different spaces are a pain
-    var modelPos = vec3.fromValues(modelMat[12], modelMat[14], modelMat[13])
-
-    var playerPos = vec3.fromValues(x, y, 0)
-    var modelToPlayer = vec3.create()
-    vec3.subtract(modelToPlayer, playerPos, modelPos)
+    var modelPos = vec3.fromValues(modelMat[12], modelMat[13], modelMat[14])
+    var modelToPlayer = vec3.subtract(vec3.create(), fromPos, modelPos)
     var distance = vec3.length(modelToPlayer)
     if (distance <= minDistance) {
       result.push(entity)
@@ -464,7 +467,7 @@ function drawHUD(width, height, energyLevel, assets, victory, gameover) {
 }
 
 function updateCamera(camera, player, coef) {
-  camera.target = [player.x, 0, player.y]
+  camera.target = vec3.clone(player.pos)
   var cameraToPlayer = vec3.create()
   vec3.subtract(cameraToPlayer, vec3FromArray(camera.target), vec3FromArray(camera.position))
   var cameraPlayerDistance = vec3.length(cameraToPlayer)
@@ -494,7 +497,6 @@ var vec3 = require('gl-vec3')
 var loader = require('./loader.js')
 var model = require('./model.js')
 var tools = require('./tools.js')
-var vec3FromArray = tools.vec3FromArray
 
 function loadAssets (gl) {
   var result = {}
@@ -526,8 +528,11 @@ function loadAssets (gl) {
       model.model = mat4.create()
     }
     result.player = result.models[1]
-    result.player.x = result.player.y = 0
     
+    // Player position is expressed using the "Y is up" convention (ground is the XZ plane)
+    // Some computations make the hypothesis that player.pos[1] == 0, keep it that way
+    result.player.pos = vec3.fromValues(0, 0, 0)
+
     result.models[0].isGround = true
   }
 
@@ -738,9 +743,6 @@ module.exports = buildEngine
 
 var vec3 = require('gl-vec3')
 
-var tools = require('./tools.js')
-var vec3FromArray = tools.vec3FromArray
-
 function Enemy(opt, emitter) {
 	this.opt = opt
 	this.emitter = emitter
@@ -762,7 +764,7 @@ Enemy.prototype.step = function(dt, player, playerState) {
 	var opt = this.opt
 
   var toPlayer = vec3.create()
-  vec3.subtract(toPlayer, vec3FromArray([player.x, 0, player.y]), this.position)
+  vec3.subtract(toPlayer, player.pos, this.position)
   var playerDistance = vec3.length(toPlayer)
   
   if (playerDistance < opt.hitRadius) {
@@ -833,7 +835,7 @@ Enemy.prototype.step = function(dt, player, playerState) {
 
 module.exports = Enemy
 
-},{"./tools.js":9,"gl-vec3":164}],5:[function(require,module,exports){
+},{"gl-vec3":164}],5:[function(require,module,exports){
 /* jshint node: true */
 /* jslint node: true */
 /* jshint strict:false */
@@ -1217,10 +1219,6 @@ module.exports = Engine
 var vec3 = require('gl-vec3')
 var mat3 = require('gl-mat3')
 
-function vec3FromArray (arr) {
-  return vec3.fromValues(arr[0], arr[1], arr[2])
-}
-
 /** Calculates a 3x3 normal matrix (transpose inverse) from the 4x4 matrix */
 function computeNormalMatrix (MVMatrix) {
   var normalMatrix = mat3.create()
@@ -1229,7 +1227,6 @@ function computeNormalMatrix (MVMatrix) {
 }
 
 module.exports = {
-    vec3FromArray: vec3FromArray,
     computeNormalMatrix: computeNormalMatrix
 }
 },{"gl-mat3":82,"gl-vec3":164}],10:[function(require,module,exports){
