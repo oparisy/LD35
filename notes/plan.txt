@@ -12,6 +12,7 @@ Plan :
  * [Fait, 00h15] Conditions de victoire et échec, toutes "règles" prévues implémentées
  * [Fait, 02h00] Remplacer joueur par deux systèmes de particules (suivant son état)
  * [Fait, 02h25] le backface culling pose problème avec les torches, je dois remettre des faces
+ * [Fait, 02h35] Supprimer le "cheat code"
  * Polish gameplay (débug)
 
 Bugs (majeurs) :
@@ -22,7 +23,6 @@ Bugs (majeurs) :
 Bugs (mineurs) :
  * l'allumage de la première torche respecte le délai, celui des suivantes est instantané ?
  * La fumée ne disparaît pas si on prend du bois déjà enflammé
- * Supprimer le "cheat code"
  * Parfois le bois donne trop d'énergie ? Mode de reproduction ?
 
 Renoncés :
