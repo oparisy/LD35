@@ -68,7 +68,7 @@ var nbEnemies = 6
 var playerSpeed = 20
 var waterColor = [0, 0.2, 0.8]
 var fireColor = [0.8, 0.2, 0]
-var playerColor = waterColor
+var cheatCode = false
 
 // Game and player states
 var energyLevel = initialEnergy // At most maxEnergyLevel
@@ -82,6 +82,7 @@ var enemies = spawnEnemies()
 var gameover = false
 var victory = false
 var playerEmitter
+var playerColor = waterColor
 
 // Main loop
 var lastDate = Date.now()
@@ -108,7 +109,7 @@ function render () {
   var input = getInput()
   var player = assets.player
   
-  if (input.action1 && !waitForUnpress) {
+  if (input.action1 && !waitForUnpress && cheatCode) {
     // Debugging purpose
     energyLevel++
     waitForUnpress = true
