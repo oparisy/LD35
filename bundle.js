@@ -17,8 +17,6 @@ var mat3    = require('gl-mat3')
 var vec3    = require('gl-vec3')
 var quat    = require('gl-quat')
 
-var tools = require('./lib/tools.js')
-var vec3FromArray = tools.vec3FromArray
 var getInput = require('./lib/input.js').getInput
 var drawModel = require('./lib/model.js').draw
 var buildEmitter = require('./lib/emitter.js')
@@ -190,6 +188,33 @@ function render () {
     var dx = playerSpeed*input.padx/(100*coef)
     var dz = playerSpeed*input.pady/(100*coef)
     var dp = vec3.fromValues(dx, 0, dz)
+    
+    // Directly applying dp to world space position is confusing, since the camera rotate
+    // So we rotate dp along the Y axis wrt camera orientation "C"
+    // Note that camera starts "behind" the player, hence C is initially colinear with Z
+    // Equivalent to the change of basis (X,Y,Z) => (Y^C, Y, C)
+    var C = vec3.subtract(vec3.create(), player.pos, camera.position)
+    C[1] = 0
+    vec3.normalize(C, C)
+
+    // Compute signed angle between Z and C,
+    // exploiting the fact that Y is a normal of the plane YC
+    // See http://stackoverflow.com/a/5190354/38096
+    var Z = vec3.fromValues(0, 0, 1)
+    var angle = vec3.angle(Z, C)
+    var cross = vec3.cross(vec3.create(), Z, C)
+    var Y = vec3.fromValues(0, 1, 0)
+    if (vec3.dot(Y, cross) < 0) {
+        angle = -angle
+    }
+
+    // Rotate dp around Y accordingly
+    vec3.rotateY(dp, dp, vec3.create(), angle)
+
+    // TODO Why?
+    vec3.negate(dp, dp)
+    
+    // Move the player
     vec3.add(player.pos, player.pos, dp)
   }
 
@@ -468,8 +493,7 @@ function drawHUD(width, height, energyLevel, assets, victory, gameover) {
 
 function updateCamera(camera, player, coef) {
   camera.target = vec3.clone(player.pos)
-  var cameraToPlayer = vec3.create()
-  vec3.subtract(cameraToPlayer, vec3FromArray(camera.target), vec3FromArray(camera.position))
+  var cameraToPlayer = vec3.subtract(vec3.create(), camera.target, camera.position)
   var cameraPlayerDistance = vec3.length(cameraToPlayer)
   if (cameraPlayerDistance > 75 || cameraPlayerDistance < 60) {
     var target = cameraPlayerDistance > 75 ? 75 : 60
@@ -482,7 +506,7 @@ function updateCamera(camera, player, coef) {
   }
 }
 
-},{"./lib/assets":2,"./lib/emitter.js":3,"./lib/enemy.js":4,"./lib/input.js":5,"./lib/model.js":7,"./lib/tools.js":9,"canvas-fit":19,"gl-clear":65,"gl-context":68,"gl-mat3":82,"gl-mat4":100,"gl-quat":125,"gl-shader":142,"gl-vec3":164,"lookat-camera":217,"q":226}],2:[function(require,module,exports){
+},{"./lib/assets":2,"./lib/emitter.js":3,"./lib/enemy.js":4,"./lib/input.js":5,"./lib/model.js":7,"canvas-fit":19,"gl-clear":65,"gl-context":68,"gl-mat3":82,"gl-mat4":100,"gl-quat":125,"gl-shader":142,"gl-vec3":164,"lookat-camera":217,"q":226}],2:[function(require,module,exports){
 /* jshint node: true */
 /* jslint node: true */
 /* jshint strict:false */
@@ -496,7 +520,6 @@ var vec3 = require('gl-vec3')
 
 var loader = require('./loader.js')
 var model = require('./model.js')
-var tools = require('./tools.js')
 
 function loadAssets (gl) {
   var result = {}
@@ -605,7 +628,7 @@ function loadAssets (gl) {
 }
 
 module.exports = loadAssets
-},{"./loader.js":6,"./model.js":7,"./tools.js":9,"gl-mat4":100,"gl-vec3":164,"q":226}],3:[function(require,module,exports){
+},{"./loader.js":6,"./model.js":7,"gl-mat4":100,"gl-vec3":164,"q":226}],3:[function(require,module,exports){
 /* jshint node: true */
 /* jslint browser: true */
 /* jslint asi: true */
