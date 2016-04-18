@@ -144,8 +144,10 @@ function render () {
   var localWoods = findNear(assets.sceneEntities, 'Woodpile', minResourceDist, player.x, player.y)
   for (i=0; i<localWoods.length; i++) {
     if (state == 'water') {
-      energyLevel = Math.min(energyLevel + woodpileEnergy, maxEnergyLevel)
-      hideResource(localWoods[i])
+      if (!localWoods[i].hidden) {
+        energyLevel = Math.min(energyLevel + woodpileEnergy, maxEnergyLevel)
+        hideResource(localWoods[i])
+      }
     } else {
       setOnFire(localWoods[i])
     }
