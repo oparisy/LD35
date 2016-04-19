@@ -21,6 +21,12 @@ var drawModel = require('./lib/model.js').draw
 var buildEmitter = require('./lib/emitter.js')
 var Enemy = require('./lib/enemy.js')
 
+// Set up a basic error handler for uncaught exceptions
+window.onerror = function (em, url, ln) {
+    alert('An error occured on line ' + ln + ', please report it!\n' + em)
+    return false
+}
+
 // Commonly used
 var i
 
@@ -99,7 +105,7 @@ function render () {
   gl.viewport(0, 0, width, height)
   clear(gl)
 
-  if (!assets.models) {
+  if (!assets.models || !assets.sceneEntities) {
     return
   }
 
@@ -292,7 +298,7 @@ function render () {
     victory = true
   }
   // Finally, draw HUD
-  if (assets.energyModel && assets.torchIcon) {
+  if (assets.energyModel && assets.torchIcon && assets.victory && assets.gameover) {
     drawHUD(width, height, energyLevel, assets, victory, gameover)
   }
 }
