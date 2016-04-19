@@ -387,7 +387,7 @@ function setOnFire(entity) {
   if (entity.onFire) {
     return
   }
-  throw 'bummer!'
+  
   entity.onFire = true
   
   // TODO Another basis convention...
