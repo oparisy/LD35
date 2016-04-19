@@ -23,7 +23,7 @@ var Enemy = require('./lib/enemy.js')
 
 // Set up a basic error handler for uncaught exceptions
 window.onerror = function (em, url, ln) {
-    alert('An error occured on line ' + ln + ', please report it!\n' + em)
+    window.alert('An error occured on line ' + ln + ', please report it!\n' + em)
     return false
 }
 
